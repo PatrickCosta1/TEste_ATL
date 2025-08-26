@@ -1,0 +1,1450 @@
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for, send_from_directory, flash
+# Ensure template/static paths work when running from a PyInstaller onefile bundle
+from calculator import PoolCalculator
+from advanced_product_selector import AdvancedProductSelector
+from database_manager import DatabaseManager
+import os
+import sys
+
+# Resolve base path: if running from PyInstaller bundle, resources are unpacked to sys._MEIPASS
+BASE_PATH = getattr(sys, '_MEIPASS', os.path.abspath(os.path.dirname(__file__)))
+TEMPLATE_FOLDER = os.path.join(BASE_PATH, 'templates') if os.path.exists(os.path.join(BASE_PATH, 'templates')) else os.path.join(os.path.abspath(os.path.dirname(__file__)), 'templates')
+STATIC_FOLDER = os.path.join(BASE_PATH, 'static') if os.path.exists(os.path.join(BASE_PATH, 'static')) else os.path.join(os.path.abspath(os.path.dirname(__file__)), 'static')
+
+app = Flask(__name__, template_folder=TEMPLATE_FOLDER, static_folder=STATIC_FOLDER)
+# Chave secreta fixa para garantir consistência no executável
+app.secret_key = 'orcamento-piscinas-2025-secret-key-fixed'
+
+# Filtro personalizado para nomes das famílias em português
+@app.template_filter('family_display_name')
+def family_display_name(family_name):
+    """Converte nomes técnicos das famílias para nomes adequados em português"""
+    family_display_names = {
+        'filtracao': 'Filtração',
+        'limpeza': 'Limpeza',
+        'quimica': 'Química',
+        'acessorios': 'Acessórios',
+        'iluminacao': 'Iluminação',
+        'aquecimento': 'Aquecimento',
+        'automacao': 'Automação',
+        'recirculacao_iluminacao': 'Recirculação e Iluminação',
+        'tratamento_agua': 'Tratamento da Água',
+        'revestimento': 'Revestimento'
+    }
+    return family_display_names.get(family_name, family_name.title())
+
+# Inicializar componentes
+calculator = PoolCalculator()
+product_selector = AdvancedProductSelector()
+db_manager = DatabaseManager()
+
+def calculate_and_update_totals(budget):
+    """Calcula e atualiza os totais das famílias com valores base e com multiplicador"""
+    if 'family_totals' not in budget:
+        budget['family_totals'] = {}
+    if 'family_totals_base' not in budget:
+        budget['family_totals_base'] = {}
+    if 'total_price' not in budget:
+        budget['total_price'] = 0
+    if 'subtotal_base' not in budget:
+        budget['subtotal_base'] = 0
+    
+    # Verificar estrutura do orçamento - pode ser 'selected_products' ou 'families'
+    products_data = budget.get('selected_products', budget.get('families', {}))
+        
+    # Calcular total por família
+    for family, products in products_data.items():
+        family_total = 0
+        
+        for product_id, product in products.items():
+            # Contar apenas produtos INCLUÍDOS (excluir alternativos e opcionais)
+            quantity = product.get('quantity', 0)
+            price = product.get('price', 0)
+            item_type = product.get('item_type', 'incluido')
+            
+            # Apenas produtos incluídos contam no orçamento
+            if quantity > 0 and item_type == 'incluido':
+                family_total += price * quantity
+        
+        if family_total > 0:
+            # Armazenar valor base (sem multiplicador)
+            budget['family_totals_base'][family] = round(family_total, 2)
+            
+            # Aplicar multiplicador para cálculos internos
+            multiplier = budget['pool_info'].get('multiplier', 1.0)
+            family_total_with_multiplier = family_total * multiplier
+            budget['family_totals'][family] = round(family_total_with_multiplier, 2)
+        else:
+            # Se total for zero, manter os valores zerados
+            budget['family_totals_base'][family] = 0
+            budget['family_totals'][family] = 0
+    
+    # Calcular totais gerais
+    budget['subtotal_base'] = sum(budget['family_totals_base'].values())
+    budget['total_price'] = sum(budget['family_totals'].values())
+
+@app.route('/static/<path:filename>')
+def static_files(filename):
+    """Servir arquivos estáticos incluindo o PDF template"""
+    return send_from_directory(STATIC_FOLDER, filename)
+
+@app.route('/')
+def index():
+    """Página inicial - Landing Page Limpa"""
+    return render_template('index_clean.html')
+
+@app.route('/client_data')
+def client_data():
+    """Formulário de dados do cliente - DESIGN LIMPO"""
+    return render_template('client_data_clean.html')
+
+@app.route('/save_client_data', methods=['POST'])
+def save_client_data():
+    """Salvar dados do cliente na sessão"""
+    try:
+        # Suporta tanto JSON quanto form data
+        if request.is_json:
+            client_data = request.get_json()
+            session['client_data'] = client_data
+            return jsonify({'success': True})
+        else:
+            client_data = request.form.to_dict()
+            session['client_data'] = client_data
+            # Para formulários HTML, redireciona para a próxima página
+            return redirect(url_for('questionnaire'))
+            
+    except Exception as e:
+        if request.is_json:
+            return jsonify({'success': False, 'error': str(e)}), 400
+        else:
+            # Para formulários HTML, redireciona de volta com erro
+            flash(f'Erro ao salvar dados: {str(e)}', 'error')
+            return redirect(url_for('client_data'))
+
+@app.route('/questionnaire')
+def questionnaire():
+    """Página do questionário interativo limpo"""
+    # Verificar se é uma modificação (vindo do botão Modificar)
+    is_modify = request.args.get('modify') == 'true'
+    
+    # Se for modificação, enviar dados existentes para pré-preenchimento
+    existing_data = None
+    if is_modify and 'pool_info' in session:
+        existing_data = {
+            'pool_info': session.get('pool_info', {}),
+            'client_info': session.get('client_info', {}),
+            'is_modify': True
+        }
+    
+    return render_template('questionnaire_clean.html', existing_data=existing_data)
+
+@app.route('/calculate', methods=['POST'])
+def calculate_metrics():
+    """Calcula métricas da piscina baseado nas dimensões"""
+    try:
+        # Suporta tanto JSON quanto form data
+        if request.is_json:
+            data = request.get_json()
+        else:
+            data = request.form.to_dict()
+            # Converte strings para float quando necessário
+            for key in ['comprimento', 'largura', 'prof_min', 'prof_max']:
+                if key in data:
+                    data[key] = float(data[key])
+        
+        # Extrair dimensões
+        comprimento = float(data.get('comprimento', 0))
+        largura = float(data.get('largura', 0))
+        prof_min = float(data.get('prof_min', 0))
+        prof_max = float(data.get('prof_max', 0))
+        
+        # Calcular métricas usando as fórmulas fornecidas
+        metrics = calculator.calculate_all_metrics(
+            comprimento, largura, prof_min, prof_max
+        )
+        
+        # Armazenar na sessão
+        session['pool_metrics'] = metrics
+        session['pool_dimensions'] = {
+            'comprimento': comprimento,
+            'largura': largura,
+            'prof_min': prof_min,
+            'prof_max': prof_max
+        }
+        
+        return jsonify({
+            'success': True,
+            'metrics': metrics
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 400
+
+@app.route('/generate_budget', methods=['POST'])
+def generate_budget():
+    """Gera orçamento baseado nas respostas do questionário"""
+    try:
+        print(f"DEBUG: Iniciando generate_budget")
+        print(f"DEBUG: Request method: {request.method}")
+        print(f"DEBUG: Request is_json: {request.is_json}")
+        print(f"DEBUG: Request content_type: {request.content_type}")
+        
+        # Suporta tanto JSON quanto form data
+        if request.is_json:
+            data = request.get_json()
+            print(f"DEBUG: Dados JSON recebidos: {data}")
+        else:
+            data = request.form.to_dict()
+            print(f"DEBUG: Dados FORM recebidos: {data}")
+        
+        print(f"DEBUG: Processando dados...")
+        
+        # Extrair respostas do questionário com conversão segura
+        answers = {
+            'acesso': data.get('acesso'),
+            'escavacao': str(data.get('escavacao', 'false')).lower() == 'true',
+            'forma': data.get('forma'),
+            'tipo_piscina': data.get('tipo_piscina'),
+            'revestimento': data.get('revestimento'),
+            'domotica': str(data.get('domotica', 'false')).lower() == 'true',
+            'localizacao': data.get('localizacao'),
+            'luz': data.get('luz'),
+            # CAMPOS NOVOS
+            'tratamento_agua': data.get('tratamento_agua'),
+            'tipo_construcao': data.get('tipo_construcao'),
+            'cobertura': data.get('cobertura'),
+            'tipo_cobertura_laminas': data.get('tipo_cobertura_laminas')
+        }
+        
+        print(f"DEBUG: Answers processadas: {answers}")
+        
+        # Validar campos obrigatórios
+        required_fields = ['acesso', 'forma', 'tipo_piscina', 'revestimento', 'localizacao', 'luz']
+        missing_fields = [field for field in required_fields if not answers.get(field)]
+        
+        if missing_fields:
+            error_msg = f"Campos obrigatórios em falta: {', '.join(missing_fields)}"
+            print(f"DEBUG: ERRO - {error_msg}")
+            raise ValueError(error_msg)
+        
+        print(f"DEBUG: Validação de campos passou")
+        
+        # Extrair e calcular dimensões/métricas com validação
+        try:
+            dimensions = {
+                'comprimento': float(data.get('comprimento', 0)),
+                'largura': float(data.get('largura', 0)),
+                'prof_min': float(data.get('prof_min', 0)),
+                'prof_max': float(data.get('prof_max', 0))
+            }
+            
+            print(f"DEBUG: Dimensions extraídas: {dimensions}")
+            
+            # Validar dimensões mínimas
+            if dimensions['comprimento'] <= 0 or dimensions['largura'] <= 0:
+                raise ValueError("Comprimento e largura devem ser maiores que zero")
+            
+            if dimensions['prof_min'] <= 0 or dimensions['prof_max'] <= 0:
+                raise ValueError("Profundidades devem ser maiores que zero")
+            
+        except (ValueError, TypeError) as e:
+            error_msg = f"Erro nas dimensões: {str(e)}"
+            print(f"DEBUG: ERRO - {error_msg}")
+            raise ValueError(error_msg)
+        
+        # Calcular todas as métricas usando o calculator
+        calc = PoolCalculator()
+        metrics = calc.calculate_all_metrics(
+            dimensions['comprimento'],
+            dimensions['largura'], 
+            dimensions['prof_min'],
+            dimensions['prof_max']
+        )
+        
+        # Verificar se temos valores calculados do frontend e usá-los se disponíveis
+        if 'm3_massa' in data and data['m3_massa']:
+            metrics['m3_massa'] = float(data['m3_massa'])
+        if 'm2_fundo' in data and data['m2_fundo']:
+            metrics['m2_fundo'] = float(data['m2_fundo'])
+        if 'm2_paredes' in data and data['m2_paredes']:
+            metrics['m2_paredes'] = float(data['m2_paredes'])
+        if 'm2_tela' in data and data['m2_tela']:
+            metrics['m2_tela'] = float(data['m2_tela'])
+        if 'ml_bordadura' in data and data['ml_bordadura']:
+            metrics['ml_bordadura'] = float(data['ml_bordadura'])
+        if 'rolos_tl' in data and data['rolos_tl']:
+            metrics['rolos_tl'] = int(data['rolos_tl'])
+        if 'rolos_3d' in data and data['rolos_3d']:
+            metrics['rolos_3d'] = int(data['rolos_3d'])
+        
+        # Salvar na sessão
+        session['pool_metrics'] = metrics
+        session['pool_dimensions'] = dimensions
+        
+        # Gerar orçamento
+        print(f"DEBUG: Iniciando geração de orçamento...")
+        print(f"DEBUG: Answers: {answers}")
+        print(f"DEBUG: Metrics: {metrics}")
+        print(f"DEBUG: Dimensions: {dimensions}")
+        
+        budget = product_selector.generate_budget(answers, metrics, dimensions)
+        
+        print(f"DEBUG: Orçamento gerado: {budget is not None}")
+        if budget:
+            print(f"DEBUG: Families no budget: {list(budget.get('families', {}).keys())}")
+            print(f"DEBUG: Total price: {budget.get('total_price', 0)}")
+        
+        # Armazenar orçamento na sessão
+        session['current_budget'] = budget
+        print(f"DEBUG: Budget salvo na sessão")
+        
+        # Calcular totais base e com multiplicador
+        if budget:
+            calculate_and_update_totals(budget)
+            session['current_budget'] = budget
+            print(f"DEBUG: Totais calculados e atualizados")
+        
+        # Resposta baseada no tipo de requisição
+        if request.is_json:
+            print(f"DEBUG: Retornando resposta JSON")
+            return jsonify({
+                'success': True,
+                'budget': budget
+            })
+        else:
+            # Para formulários HTML, redireciona para a página de orçamento
+            print(f"DEBUG: Redirecionando para /budget")
+            return redirect(url_for('view_budget'))
+        
+    except Exception as e:
+        print(f"DEBUG: ERRO em generate_budget: {str(e)}")
+        print(f"DEBUG: Tipo do erro: {type(e).__name__}")
+        import traceback
+        print(f"DEBUG: Stack trace: {traceback.format_exc()}")
+        
+        if request.is_json:
+            return jsonify({
+                'success': False,
+                'error': str(e)
+            }), 400
+        else:
+            # Para formulários HTML, redireciona de volta com erro
+            flash(f'Erro ao gerar orçamento: {str(e)}', 'error')
+            print(f"DEBUG: Redirecionando para /questionnaire devido a erro")
+            return redirect(url_for('questionnaire'))
+
+@app.route('/budget')
+def view_budget():
+    """Visualizar e editar orçamento gerado"""
+    print(f"DEBUG: Acessando rota /budget")
+    print(f"DEBUG: current_budget na sessão: {session.get('current_budget', 'VAZIO')}")
+    print(f"DEBUG: Chaves da sessão: {list(session.keys())}")
+    
+    budget = session.get('current_budget', {})
+    if not budget:
+        print("DEBUG: Sem budget na sessão, redirecionando para /")
+        return redirect('/')
+    
+    print(f"DEBUG: Budget encontrado, continuando...")
+    
+    # Obter dados do cliente da sessão
+    client_data = session.get('client_data', {})
+    
+    # Garantir que client_info e pool_info estão definidos
+    if 'client_info' not in budget:
+        budget['client_info'] = client_data
+    if 'pool_info' not in budget:
+        budget['pool_info'] = session.get('pool_info', {})
+    if 'family_totals' not in budget:
+        budget['family_totals'] = {}
+    if 'total_price' not in budget:
+        budget['total_price'] = 0
+    
+    # Garantir que os novos campos de totais estão inicializados
+    calculate_and_update_totals(budget)
+    
+    # Limpar valores None/undefined que podem causar erro de serialização
+    def clean_undefined_values(obj):
+        if isinstance(obj, dict):
+            return {k: clean_undefined_values(v) for k, v in obj.items() if v is not None}
+        elif isinstance(obj, list):
+            return [clean_undefined_values(item) for item in obj if item is not None]
+        else:
+            return obj
+    
+    budget = clean_undefined_values(budget)
+    client_data = clean_undefined_values(client_data)
+    
+    return render_template('budget_clean.html', budget=budget, client_data=client_data)
+
+@app.route('/update_budget', methods=['POST'])
+def update_budget():
+    """Atualizar itens do orçamento manualmente"""
+    try:
+        # Suporta tanto JSON quanto form data
+        if request.is_json:
+            data = request.get_json()
+        else:
+            data = request.form.to_dict()
+            
+        budget = session.get('current_budget', {})
+        
+        # Atualizar item específico
+        family = data.get('family')
+        item_id = data.get('item_id')
+        quantity_value = data.get('quantity', 1)
+        
+        # Garantir que quantity seja um número válido
+        if quantity_value is None or quantity_value == '':
+            quantity_value = 1
+        
+        try:
+            new_quantity = int(quantity_value)
+        except (ValueError, TypeError):
+            new_quantity = 1
+        
+        if family in budget['families'] and item_id in budget['families'][family]:
+            budget['families'][family][item_id]['quantity'] = new_quantity
+            
+            # Recalcular total da família com multiplicador
+            family_total = sum(
+                item['price'] * item['quantity'] 
+                for item in budget['families'][family].values()
+                if item.get('item_type', 'incluido') == 'incluido'
+            )
+        # Recalcular totais usando a nova função
+        calculate_and_update_totals(budget)
+        
+        session['current_budget'] = budget
+        
+        return jsonify({
+            'success': True,
+            'new_total': budget['total_price']
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 400
+
+@app.route('/switch_product', methods=['POST'])
+def switch_product():
+    """Trocar produto incluído por opcional da mesma família"""
+    try:
+        data = request.get_json() if request.is_json else request.form.to_dict()
+        budget = session.get('current_budget', {})
+        
+        family = data.get('family')
+        target_product_id = data.get('item_id')
+        
+        if family not in budget['families']:
+            return jsonify({'success': False, 'error': 'Família não encontrada'}), 400
+        
+        family_products = budget['families'][family]
+        
+        # Encontrar o produto opcional que quer virar incluído
+        target_product = family_products.get(target_product_id)
+        if not target_product or target_product.get('item_type') != 'alternativo':
+            return jsonify({'success': False, 'error': 'Produto alternativo não encontrado'}), 400
+        
+        # Identificar qual produto específico este alternativo deve substituir
+        alternative_to = target_product.get('alternative_to')
+        
+        if alternative_to and alternative_to in family_products:
+            # Trocar especificamente com o produto principal definido
+            main_product = family_products[alternative_to]
+            
+            # Fazer a troca apenas entre estes dois produtos
+            if main_product.get('item_type') == 'incluido':
+                # Decidir quantidade preservada: preferir a quantidade que a alternativa já tinha
+                # caso exista; senão copiar a quantidade do produto principal; como fallback usar 1.
+                try:
+                    alt_qty = int(target_product.get('quantity', 0) or 0)
+                except (ValueError, TypeError):
+                    alt_qty = 0
+
+                try:
+                    main_qty = int(main_product.get('quantity', 0) or 0)
+                except (ValueError, TypeError):
+                    main_qty = 0
+
+                preserved_qty = alt_qty if alt_qty > 0 else (main_qty if main_qty > 0 else 1)
+
+                # Produto principal vira alternativo (manter sua quantidade para visualização)
+                main_product['item_type'] = 'alternativo'
+                # manter quantidade existente para que o alternativo mostre preço/quantidade
+                main_product['quantity'] = main_qty
+                main_product['alternative_to'] = target_product_id  # CRUCIAL: definir a nova relação
+                # Limpar nome e adicionar (ALTERNATIVO)
+                original_name = main_product['name'].replace(' (ALTERNATIVO)', '').replace(' (OPCIONAL)', '')
+                main_product['name'] = original_name + ' (ALTERNATIVO)'
+
+                # Produto alternativo vira incluído (preservando quantidade apropriada)
+                target_product['item_type'] = 'incluido'
+                target_product['quantity'] = preserved_qty
+                # Remover a relação alternative_to (agora ele é o principal)
+                if 'alternative_to' in target_product:
+                    del target_product['alternative_to']
+                # Limpar nome
+                original_name = target_product['name'].replace(' (ALTERNATIVO)', '').replace(' (OPCIONAL)', '')
+                target_product['name'] = original_name
+            else:
+                return jsonify({'success': False, 'error': 'Produto principal não está incluído'}), 400
+        else:
+            # Fallback: procurar produto incluído do mesmo tipo/categoria
+            included_products = [
+                (prod_id, prod) for prod_id, prod in family_products.items() 
+                if prod.get('item_type') == 'incluido'
+            ]
+            
+            if not included_products:
+                return jsonify({'success': False, 'error': 'Nenhum produto incluído encontrado para trocar'}), 400
+            
+            # Identificar o tipo do produto alternativo para trocar com produto similar
+            target_name = target_product.get('name', '').lower()
+            
+            # Encontrar produto incluído do mesmo tipo
+            similar_product = None
+            
+            # Definir categorias por palavras-chave no nome
+            if any(keyword in target_name for keyword in ['válvula', 'valvula']):
+                # Procurar por outras válvulas
+                for prod_id, prod in included_products:
+                    prod_name = prod.get('name', '').lower()
+                    if any(keyword in prod_name for keyword in ['válvula', 'valvula']):
+                        similar_product = (prod_id, prod)
+                        break
+            elif any(keyword in target_name for keyword in ['filtro', 'filter']):
+                # Procurar por outros filtros
+                for prod_id, prod in included_products:
+                    prod_name = prod.get('name', '').lower()
+                    if any(keyword in prod_name for keyword in ['filtro', 'filter']):
+                        similar_product = (prod_id, prod)
+                        break
+            elif any(keyword in target_name for keyword in ['bomba', 'pump']):
+                # Procurar por outras bombas
+                for prod_id, prod in included_products:
+                    prod_name = prod.get('name', '').lower()
+                    if any(keyword in prod_name for keyword in ['bomba', 'pump']):
+                        similar_product = (prod_id, prod)
+                        break
+            elif any(keyword in target_name for keyword in ['quadro', 'painel', 'controle']):
+                # Procurar por outros quadros/painéis
+                for prod_id, prod in included_products:
+                    prod_name = prod.get('name', '').lower()
+                    if any(keyword in prod_name for keyword in ['quadro', 'painel', 'controle']):
+                        similar_product = (prod_id, prod)
+                        break
+            
+            # Se não encontrou produto similar, pegar o primeiro (fallback do fallback)
+            if not similar_product:
+                similar_product = included_products[0]
+            
+            similar_id, similar_prod = similar_product
+            
+            # Fazer a troca apenas entre estes dois produtos
+            # Preservar quantidade adequada: se a alternativa já tinha quantidade (>0), usar essa;
+            # senão copiar a quantidade do similar_prod; fallback 1.
+            try:
+                alt_qty = int(target_product.get('quantity', 0) or 0)
+            except (ValueError, TypeError):
+                alt_qty = 0
+
+            try:
+                similar_qty = int(similar_prod.get('quantity', 0) or 0)
+            except (ValueError, TypeError):
+                similar_qty = 0
+
+            preserved_qty = alt_qty if alt_qty > 0 else (similar_qty if similar_qty > 0 else 1)
+
+            similar_prod['item_type'] = 'alternativo'
+            # Manter a quantidade do produto similar para que o alternativo mostre preço/quantidade
+            similar_prod['quantity'] = similar_qty
+            similar_prod['alternative_to'] = target_product_id  # CRUCIAL: definir a nova relação
+            original_name = similar_prod['name'].replace(' (ALTERNATIVO)', '').replace(' (OPCIONAL)', '')
+            similar_prod['name'] = original_name + ' (ALTERNATIVO)'
+
+            # Produto alternativo vira incluído (preservando quantidade apropriada)
+            target_product['item_type'] = 'incluido'
+            target_product['quantity'] = preserved_qty
+            # Remover a relação alternative_to (agora ele é o principal)
+            if 'alternative_to' in target_product:
+                del target_product['alternative_to']
+            original_name = target_product['name'].replace(' (ALTERNATIVO)', '').replace(' (OPCIONAL)', '')
+            target_product['name'] = original_name
+        
+        # Recalcular totais com multiplicador
+        family_total = sum(
+            item['price'] * item['quantity'] 
+            for item in family_products.values()
+            if item.get('item_type') == 'incluido'
+        )
+        
+        # Recalcular totais usando a nova função
+        calculate_and_update_totals(budget)
+        
+        session['current_budget'] = budget
+        
+        return jsonify({
+            'success': True,
+            'new_total': budget['total_price']
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 400
+
+@app.route('/update_quantity', methods=['POST'])
+def update_quantity():
+    """Atualizar quantidade de um produto"""
+    try:
+        data = request.get_json() if request.is_json else request.form.to_dict()
+        budget = session.get('current_budget', {})
+        
+        product_id = data.get('product_id')
+        quantity_value = data.get('quantity', 1)
+        
+        # Garantir que quantity seja um número válido
+        if quantity_value is None or quantity_value == '':
+            quantity_value = 0
+        
+        try:
+            new_quantity = int(quantity_value)
+        except (ValueError, TypeError):
+            new_quantity = 0
+        
+        # Encontrar o produto em todas as famílias
+        product_found = False
+        for family_name, family_products in budget.get('families', {}).items():
+            if product_id in family_products:
+                family_products[product_id]['quantity'] = max(0, new_quantity)  # Permitir quantidade 0
+                product_found = True
+                break
+        
+        if product_found:
+            # Recalcular totais da família
+            for family_name, family_products in budget['families'].items():
+                family_total = sum(
+                    item['price'] * item['quantity'] 
+                    for item in family_products.values() 
+                    if item['quantity'] > 0
+                )
+                
+                # Recalcular totais usando a nova função
+                calculate_and_update_totals(budget)
+            
+            budget['total_price'] = sum(budget['family_totals'].values())
+            session['current_budget'] = budget
+            
+            return jsonify({
+                'success': True,
+                'new_total': budget['total_price']
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Produto não encontrado'
+            }), 404
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 400
+
+@app.route('/recalculate_budget', methods=['POST'])
+def recalculate_budget():
+    """Recalcular orçamento com novos dados de medidas e respostas do questionário"""
+    try:
+        data = request.get_json()
+        
+        # Obter dados da sessão
+        client_data = session.get('client_data', {})
+        if not client_data:
+            return jsonify({
+                'success': False,
+                'error': 'Dados do cliente não encontrados'
+            }), 400
+            
+        # Atualizar pool_info com novos dados
+        pool_info = {
+            'comprimento': float(data.get('comprimento', 0)),
+            'largura': float(data.get('largura', 0)),
+            'prof_min': float(data.get('prof_min', 0)),
+            'prof_max': float(data.get('prof_max', 0)),
+            'answers': data.get('answers', {})
+        }
+        
+        # Calcular novos cálculos com base nas medidas
+        metrics = calculator.calculate_all_metrics(
+            pool_info['comprimento'],
+            pool_info['largura'],
+            pool_info['prof_min'],
+            pool_info['prof_max']
+        )
+        
+        # Atualizar pool_info com cálculos
+        pool_info.update(metrics)
+        
+        # Extrair answers do pool_info
+        answers = pool_info.get('answers', {})
+        dimensions = {
+            'comprimento': pool_info['comprimento'],
+            'largura': pool_info['largura'],
+            'prof_min': pool_info['prof_min'],
+            'prof_max': pool_info['prof_max']
+        }
+        
+        # Gerar novo orçamento
+        budget = product_selector.generate_budget(answers, metrics, dimensions)
+        
+        # Atualizar sessão
+        session['current_budget'] = budget
+        session['pool_metrics'] = metrics
+        session['pool_dimensions'] = dimensions
+        
+        return jsonify({
+            'success': True,
+            'message': 'Orçamento recalculado com sucesso'
+        })
+        
+    except Exception as e:
+        print(f"Erro ao recalcular orçamento: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': f'Erro interno: {str(e)}'
+        }), 500
+
+@app.route('/get_current_answers', methods=['GET'])
+def get_current_answers():
+    """Retorna as respostas atuais do questionário"""
+    try:
+        budget = session.get('current_budget', {})
+        pool_info = budget.get('pool_info', {})
+        
+        # Tentar obter answers de diferentes fontes
+        answers = pool_info.get('answers', {})
+        if not answers:
+            # Fallback para campos individuais se answers não existir
+            answers = {
+                'acesso': pool_info.get('acesso', 'facil'),
+                'escavacao': pool_info.get('escavacao', 'mecanica'),
+                'forma': pool_info.get('forma', 'retangular'),
+                'tipo_piscina': pool_info.get('tipo_piscina', 'skimmer'),
+                'revestimento': pool_info.get('revestimento', 'vinil'),
+                'domotica': pool_info.get('domotica', 'nao'),
+                'localizacao': pool_info.get('localizacao', 'exterior'),
+                'luz': pool_info.get('luz', 'led'),
+                'tratamento_agua': pool_info.get('tratamento_agua', 'cloro_manual')
+            }
+        
+        return jsonify({
+            'success': True,
+            'answers': answers
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'answers': {
+                'acesso': 'facil',
+                'escavacao': 'mecanica',
+                'forma': 'retangular',
+                'tipo_piscina': 'skimmer',
+                'revestimento': 'vinil',
+                'domotica': 'nao',
+                'localizacao': 'exterior',
+                'luz': 'led',
+                'tratamento_agua': 'cloro_manual'
+            }
+        })
+
+@app.route('/toggle_optional', methods=['POST'])
+def toggle_optional():
+    """Alternar produto opcional entre incluído e não incluído"""
+    try:
+        data = request.get_json() if request.is_json else request.form.to_dict()
+        budget = session.get('current_budget', {})
+        
+        product_id = data.get('product_id')
+        include = data.get('include', True)
+        
+        # Encontrar o produto em todas as famílias
+        product_found = False
+        for family_name, family_products in budget.get('families', {}).items():
+            if product_id in family_products:
+                product = family_products[product_id]
+                # Aceitar produtos opcionais ou produtos que eram opcionais (incluídos via toggle)
+                current_type = product.get('item_type')
+                is_toggleable = (current_type == 'opcional' or 
+                               (current_type == 'incluido' and product.get('was_optional', False)))
+                
+                if is_toggleable or current_type == 'opcional':
+                    if include and current_type == 'opcional':
+                        # Quando incluir: produto vira "incluído" e quantidade = 1
+                        product['item_type'] = 'incluido'
+                        product['quantity'] = max(1, product.get('quantity', 1))
+                        product['was_optional'] = True  # Marcar que era opcional
+                        # Limpar nome (remover sufixos opcionais se houver)
+                        original_name = product['name'].replace(' (OPCIONAL)', '').replace(' (ALTERNATIVO)', '')
+                        product['name'] = original_name
+                    elif not include and product.get('was_optional', False):
+                        # Quando remover: produto volta a ser "opcional" e quantidade = 0
+                        product['item_type'] = 'opcional'
+                        product['quantity'] = 0
+                        product['was_optional'] = False
+                    elif not include and current_type == 'opcional':
+                        # Produto opcional sendo "desincluído"
+                        product['quantity'] = 0
+                    product_found = True
+                    break
+        
+        if product_found:
+            # Recalcular totais da família excluindo alternativos
+            for family_name, family_products in budget['families'].items():
+                family_total = sum(
+                    item['price'] * item['quantity'] 
+                    for item in family_products.values() 
+                    if item['quantity'] > 0 and item.get('item_type', 'incluido') in ['incluido', 'opcional']
+                )
+                
+                # Recalcular totais usando a nova função
+                calculate_and_update_totals(budget)
+            
+            budget['total_price'] = sum(budget['family_totals'].values())
+            session['current_budget'] = budget
+            
+            return jsonify({
+                'success': True,
+                'new_total': budget['total_price']
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Produto opcional não encontrado'
+            }), 404
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 400
+def update_item_type():
+    """Alterar tipo do item (incluído/opcional/oferta)"""
+    try:
+        # Suporta tanto JSON quanto form data
+        if request.is_json:
+            data = request.get_json()
+        else:
+            data = request.form.to_dict()
+            
+        budget = session.get('current_budget', {})
+        
+        family = data.get('family')
+        item_id = data.get('item_id')
+        new_type = data.get('item_type', 'incluido')
+        
+        if family in budget['families'] and item_id in budget['families'][family]:
+            # Atualizar tipo do item
+            budget['families'][family][item_id]['item_type'] = new_type
+            
+            # Se mudou para opcional ou oferta, zerar quantidade
+            if new_type in ['opcional', 'oferta']:
+                budget['families'][family][item_id]['quantity'] = 0
+            elif new_type == 'incluido' and budget['families'][family][item_id]['quantity'] == 0:
+                # Se mudou para incluído e estava zerado, colocar 1
+                budget['families'][family][item_id]['quantity'] = 1
+            
+            # Recalcular total da família com multiplicador
+            family_total = sum(
+                item['price'] * item['quantity'] 
+                for item in budget['families'][family].values()
+                if item.get('item_type', 'incluido') == 'incluido'
+            )
+            
+            # Recalcular totais usando a nova função
+            calculate_and_update_totals(budget)
+            
+            session['current_budget'] = budget
+            
+        return jsonify({
+            'success': True,
+            'new_total': budget['total_price']
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 400
+
+@app.route('/get_session_data')
+def get_session_data():
+    """Retorna dados da sessão para exportação PDF"""
+    try:
+        return jsonify({
+            'client_data': session.get('client_data', {}),
+            'current_budget': session.get('current_budget', {}),
+            'pool_metrics': session.get('pool_metrics', {}),
+            'pool_dimensions': session.get('pool_dimensions', {})
+        })
+    except Exception as e:
+        return jsonify({
+            'error': str(e)
+        }), 400
+
+@app.route('/replace_product', methods=['POST'])
+def replace_product():
+    """Substitui um produto por outro alternativo"""
+    try:
+        data = request.get_json()
+        family = data.get('family')
+        current_product_id = data.get('current_product_id')
+        new_product_id = data.get('new_product_id')
+        
+        print(f"DEBUG replace_product: family={family}, current={current_product_id}, new={new_product_id}")
+        
+        if not all([family, current_product_id, new_product_id]):
+            return jsonify({'success': False, 'error': 'Parâmetros inválidos'})
+        
+        # Extrair ID real do novo produto
+        real_new_id = str(new_product_id)
+        if '_' in str(new_product_id):
+            parts = str(new_product_id).split('_', 1)
+            if len(parts) == 2 and parts[1].isdigit():
+                real_new_id = parts[1]
+        
+        # Buscar informações do novo produto
+        new_product = db_manager.get_product_by_id(real_new_id)
+        if not new_product:
+            return jsonify({'success': False, 'error': f'Produto não encontrado com ID {real_new_id}'})
+        
+        # Obter orçamento atual da sessão
+        current_budget = session.get('current_budget', {})
+        if not current_budget:
+            return jsonify({'success': False, 'error': 'Orçamento não encontrado na sessão'})
+        
+        # Encontrar e substituir o produto na família
+        if family in current_budget.get('families', {}):
+            family_products = current_budget['families'][family]
+            
+            if current_product_id in family_products:
+                # Manter quantidade atual
+                current_quantity = family_products[current_product_id]['quantity']
+                current_item_type = family_products[current_product_id]['item_type']
+                
+                # Remover produto atual
+                del family_products[current_product_id]
+                
+                # Criar novo ID no formato correto baseado na categoria
+                category_prefixes = {
+                    'Filtros de Areia': 'filter',
+                    'Filtros de Cartucho': 'filter', 
+                    'Bombas': 'pump',
+                    'Válvulas': 'valve',
+                    'Quadros Elétricos': 'panel'
+                }
+                
+                new_category = new_product.get('category_name', '')
+                prefix = category_prefixes.get(new_category, 'product')
+                new_key = f"{prefix}_{new_product['id']}"
+                
+                # Adicionar novo produto
+                family_products[new_key] = {
+                    'id': new_product['id'],
+                    'name': new_product['name'],
+                    'price': new_product['base_price'],
+                    'quantity': current_quantity,
+                    'item_type': current_item_type,  # Manter tipo anterior
+                    'unit': new_product.get('unit', 'un'),
+                    'reasoning': f'Produto substituído pelo comercial'
+                }
+                
+                # Recalcular total da família excluindo alternativos
+                family_total = sum(
+                    p['price'] * p['quantity'] for p in family_products.values() 
+                    if p['quantity'] > 0 and p.get('item_type', 'incluido') in ['incluido', 'opcional']
+                )
+                
+                # Aplicar multiplicador
+                # Recalcular totais usando a nova função
+                calculate_and_update_totals(current_budget)
+                
+                # Salvar na sessão
+                session['current_budget'] = current_budget
+                
+                print(f"DEBUG: Produto substituído com sucesso - {new_product['name']}")
+                
+                return jsonify({
+                    'success': True,
+                    'message': f'Produto substituído com sucesso por {new_product["name"]}'
+                })
+            else:
+                return jsonify({'success': False, 'error': 'Produto atual não encontrado no orçamento'})
+        else:
+            return jsonify({'success': False, 'error': 'Família não encontrada no orçamento'})
+        
+    except Exception as e:
+        print(f"ERRO replace_product: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+@app.route('/get_alternatives/<family_name>/<current_product_id>')
+def get_alternatives(family_name, current_product_id):
+    """Busca alternativas disponíveis para um produto específico na base de dados"""
+    try:
+
+        print(f"[ALT-DEBUG] family_name recebido: {family_name}")
+        import re
+        real_product_id = current_product_id
+        match = re.search(r'(\d+)$', current_product_id)
+        if match:
+            real_product_id = match.group(1)
+        print(f"[ALT-DEBUG] ID extraído: {current_product_id} -> {real_product_id}")
+
+        family_mapping = {
+            'filtracao': 'Filtração',
+            'recirculacao': 'Recirculação e Iluminação - Encastráveis Tanque Piscina',
+            'recirculacao_iluminacao': 'Recirculação e Iluminação - Encastráveis Tanque Piscina',
+            'aquecimento': 'Aquecimento',
+            'iluminacao': 'Iluminação',
+            'automacao': 'Automação',
+            'bombas': 'Bombas',
+            'limpeza': 'Limpeza',
+            'acessorios': 'Acessórios',
+            'tratamento': 'Tratamento de Água'
+        }
+        db_family_name = family_mapping.get(family_name, family_name)
+        print(f"[ALT-DEBUG] Família mapeada: {family_name} -> {db_family_name}")
+
+        current_product = db_manager.get_product_by_id(real_product_id)
+        print(f"[ALT-DEBUG] Produto atual retornado: {current_product}")
+        if not current_product:
+            print(f"[ALT-DEBUG] Produto não encontrado com ID {real_product_id}")
+            return jsonify({'success': False, 'error': f'Produto não encontrado com ID {real_product_id}'})
+
+        all_products = db_manager.get_products_by_family(db_family_name)
+        print(f"[ALT-DEBUG] Produtos retornados por família ({db_family_name}): {len(all_products)}")
+        for p in all_products:
+            print(f"    - {p.get('name')} (ID: {p.get('id')}, categoria: {p.get('category_name')})")
+
+        import unicodedata
+        def normalize(s):
+            if not s:
+                return ''
+            return unicodedata.normalize('NFKD', s).encode('ASCII', 'ignore').decode('ASCII').strip().lower()
+
+        current_category = normalize(current_product.get('category_name', ''))
+        print(f"[ALT-DEBUG] Categoria normalizada do produto atual: '{current_category}' (original: '{current_product.get('category_name', '')}')")
+        same_category_products = [p for p in all_products if normalize(p.get('category_name', '')) == current_category]
+        print(f"[ALT-DEBUG] Produtos na mesma categoria: {len(same_category_products)}")
+        for p in same_category_products:
+            print(f"    - {p.get('name')} (ID: {p.get('id')})")
+
+        alternatives = []
+        if len(same_category_products) > 1:
+            for product in same_category_products:
+                try:
+                    prod_id = int(product['id'])
+                    real_id = int(real_product_id)
+                except Exception as e:
+                    print(f"[ALT-DEBUG] Erro ao converter IDs para int: {e}")
+                    continue
+                if prod_id != real_id:
+                    alternatives.append({
+                        'id': product['id'],
+                        'name': product['name'],
+                        'price': product['base_price'],
+                        'description': product.get('description', ''),
+                        'attributes': product.get('attributes', {})
+                    })
+                    print(f"[ALT-DEBUG] Alternativa encontrada: {product['name']} (ID: {product['id']})")
+        else:
+            print("[ALT-DEBUG] Só existe um produto nesta categoria, nenhuma alternativa disponível.")
+
+        print(f"[ALT-DEBUG] Total de alternativas encontradas: {len(alternatives)}")
+
+        return jsonify({
+            'success': True,
+            'current_product': {
+                'id': current_product['id'],
+                'name': current_product['name'],
+                'price': current_product.get('base_price', current_product.get('price', 0))
+            },
+            'alternatives': alternatives
+        })
+        
+    except Exception as e:
+        print(f"ERRO get_alternatives: {str(e)}")  # Debug
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 400
+
+@app.route('/remove_product', methods=['POST'])
+def remove_product():
+    """Remove um produto do orçamento completamente"""
+    try:
+        data = request.get_json() if request.is_json else request.form.to_dict()
+        budget = session.get('current_budget', {})
+        
+        product_id = data.get('product_id')
+        family_name = data.get('family')
+        
+        if not product_id or not family_name:
+            return jsonify({'success': False, 'error': 'Parâmetros inválidos'})
+        
+        # Encontrar e remover o produto
+        if family_name in budget.get('families', {}):
+            family_products = budget['families'][family_name]
+            
+            if product_id in family_products:
+                del family_products[product_id]
+                
+                # Recalcular total da família excluindo alternativos
+                family_total = sum(
+                    p['price'] * p['quantity'] for p in family_products.values() 
+                    if p['quantity'] > 0 and p.get('item_type', 'incluido') in ['incluido', 'opcional']
+                )
+                
+                # Recalcular totais usando a nova função
+                calculate_and_update_totals(budget)
+                
+                session['current_budget'] = budget
+                
+                return jsonify({
+                    'success': True,
+                    'message': 'Produto removido com sucesso',
+                    'new_total': budget['total_price']
+                })
+            else:
+                return jsonify({'success': False, 'error': 'Produto não encontrado'})
+        else:
+            return jsonify({'success': False, 'error': 'Família não encontrada'})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+@app.route('/get_product_families')
+def get_product_families():
+    """Retorna todas as famílias de produtos disponíveis"""
+    try:
+        raw_families = db_manager.get_all_families()
+
+        # Normalizar e deduplicar famílias (mesmo nome com diferenças de caixa/espacos)
+        normalized = {}
+        for f in raw_families:
+            key = (f.get('name') or '').strip().lower()
+            if key in normalized:
+                # Somar contagens caso exista duplicata
+                normalized[key]['product_count'] = (normalized[key].get('product_count', 0) or 0) + (f.get('product_count', 0) or 0)
+            else:
+                normalized[key] = dict(f)
+
+        families = list(normalized.values())
+        return jsonify({
+            'success': True,
+            'families': families
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+@app.route('/get_family_products/<family_name>')
+def get_family_products(family_name):
+    """Retorna todos os produtos de uma família específica"""
+    try:
+        products = db_manager.get_products_by_family(family_name)
+        return jsonify({
+            'success': True,
+            'products': products
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+@app.route('/include_optional_product', methods=['POST'])
+def include_optional_product():
+    """Transforma um produto opcional em incluído no orçamento"""
+    try:
+        data = request.get_json() if request.is_json else request.form.to_dict()
+        budget = session.get('current_budget', {})
+        
+        product_id = data.get('product_id')
+        family = data.get('family')
+        quantity = int(data.get('quantity', 1))
+        
+        print(f"DEBUG: Incluindo produto opcional {product_id} da família {family} com quantidade {quantity}")
+        
+        # Verificar se o produto existe no orçamento
+        families_data = budget.get('selected_products', budget.get('families', {}))
+        
+        if family in families_data and product_id in families_data[family]:
+            # Transformar o produto opcional em incluído
+            families_data[family][product_id]['item_type'] = 'incluido'
+            families_data[family][product_id]['quantity'] = quantity
+            
+            # Recalcular totais
+            calculate_and_update_totals(budget)
+            
+            session['current_budget'] = budget
+            
+            return jsonify({
+                'success': True,
+                'message': 'Produto incluído no orçamento com sucesso',
+                'new_total': budget['total_price']
+            })
+        else:
+            return jsonify({'success': False, 'error': 'Produto não encontrado'})
+            
+    except Exception as e:
+        print(f"ERROR: Erro ao incluir produto opcional: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+@app.route('/add_product', methods=['POST'])
+def add_product():
+    """Adiciona um novo produto ao orçamento"""
+    try:
+        data = request.get_json() if request.is_json else request.form.to_dict()
+        budget = session.get('current_budget', {})
+        
+        product_id = data.get('product_id')
+        item_type = data.get('item_type', 'incluido')  # incluido, opcional, alternativo
+        alternative_to = data.get('alternative_to', None)  # Para produtos alternativos
+        
+        if not product_id:
+            return jsonify({'success': False, 'error': 'ID do produto é obrigatório'})
+        
+        # Buscar informações do produto
+        product = db_manager.get_product_by_id(product_id)
+        if not product:
+            return jsonify({'success': False, 'error': 'Produto não encontrado'})
+        
+        # Debug: ver estrutura do produto
+        print(f"DEBUG add_product - Produto encontrado: {product}")
+        
+        # Determinar a família do produto (normalizar nomes para evitar fallback indevido)
+        family_name = product.get('family_name', '') or ''
+        print(f"DEBUG add_product - family_name do produto: '{family_name}'")
+
+        import unicodedata, re
+        def _normalize(s):
+            if not s:
+                return ''
+            return unicodedata.normalize('NFKD', s).encode('ASCII', 'ignore').decode('ASCII').strip().lower()
+
+        normalized_family = _normalize(family_name)
+
+        # Mapeamentos com chaves normalizadas para cobrir variações/acentos
+        family_mapping_raw = {
+            'filtração': 'filtracao',
+            'aquecimento': 'aquecimento',
+            'iluminação': 'iluminacao',
+            'automação': 'automacao',
+            'limpeza': 'limpeza',
+            'acessórios': 'acessorios',
+            'recirculação e iluminação - encastráveis tanque piscina': 'recirculacao_iluminacao'
+        }
+        family_mapping = { _normalize(k): v for k, v in family_mapping_raw.items() }
+
+        # Variações adicionais normalizadas
+        family_variations_raw = {
+            'filtracao': 'filtracao',
+            'filtração': 'filtracao',
+            'filtraçao': 'filtracao',
+            'filtracacão': 'filtracao',
+            'aquecimento': 'aquecimento',
+            'iluminacao': 'iluminacao',
+            'iluminação': 'iluminacao',
+            'automacao': 'automacao',
+            'automação': 'automacao',
+            'limpeza': 'limpeza',
+            'acessorios': 'acessorios',
+            'acessórios': 'acessorios',
+            'recirculação e iluminação - encastráveis tanque piscina': 'recirculacao_iluminacao',
+            'recirculacao e iluminacao - encastráveis tanque piscina': 'recirculacao_iluminacao',
+            'recirculação e iluminação': 'recirculacao_iluminacao',
+            'recirculacao e iluminacao': 'recirculacao_iluminacao'
+        }
+        family_variations = { _normalize(k): v for k, v in family_variations_raw.items() }
+
+        # Tentar mapeamento direto -> variações -> fallback
+        mapped_family = family_mapping.get(normalized_family) or family_variations.get(normalized_family)
+        if not mapped_family:
+            # Se ainda não mapeado, usar a versão slug do nome normalizado como chave
+            if normalized_family:
+                mapped_family = re.sub(r'[^a-z0-9]+', '_', normalized_family).strip('_')
+                print(f"DEBUG add_product - fallback slug gerado para família: '{mapped_family}'")
+            else:
+                mapped_family = 'acessorios'
+
+        print(f"DEBUG add_product - família mapeada: '{mapped_family}' (original: '{family_name}')")
+        
+        # Inicializar família se não existir
+        if 'families' not in budget:
+            budget['families'] = {}
+        if mapped_family not in budget['families']:
+            budget['families'][mapped_family] = {}
+        if 'family_totals' not in budget:
+            budget['family_totals'] = {}
+        if mapped_family not in budget['family_totals']:
+            budget['family_totals'][mapped_family] = 0.0
+        
+        # Criar chave única para o produto
+        category_prefixes = {
+            'Filtros de Areia': 'filter',
+            'Filtros de Cartucho': 'filter',
+            'Bombas': 'pump',
+            'Válvulas': 'valve',
+            'Quadros Elétricos': 'panel',
+            'Refletores LED': 'led',
+            'Aquecedores': 'heater'
+        }
+        
+        category = product.get('category_name', '')
+        prefix = category_prefixes.get(category, 'product')
+        product_key = f"{prefix}_{product_id}"
+        
+        # Se for alternativo, adicionar referência ao produto relacionado
+        alternative_to_product = None
+        alternative_to_key = None
+        if item_type == 'alternativo' and alternative_to:
+            # Procurar o produto principal em todas as famílias.
+            # Accept both full keys (e.g. 'filter_123') or raw numeric IDs ('123').
+            alt_str = str(alternative_to)
+            for fam_name, fam_products in budget.get('families', {}).items():
+                # 1) Match by exact key
+                if alt_str in fam_products:
+                    alternative_to_key = alt_str
+                    alternative_to_product = fam_products[alt_str]
+                    break
+
+                # 2) Match by raw id inside product entries
+                for existing_key, existing_prod in fam_products.items():
+                    try:
+                        existing_id = str(existing_prod.get('id', ''))
+                    except Exception:
+                        existing_id = ''
+                    if existing_id and existing_id == alt_str:
+                        alternative_to_key = existing_key
+                        alternative_to_product = existing_prod
+                        break
+                if alternative_to_product:
+                    break
+        
+        # Definir quantidade baseada no tipo
+        quantity = 1 if item_type in ['incluido', 'alternativo'] else 0
+        
+        # Adicionar o novo produto
+        product_data = {
+            'id': product['id'],
+            'name': product['name'],
+            'price': product['base_price'],
+            'quantity': quantity,
+            'item_type': item_type,
+            'unit': product.get('unit', 'un'),
+            'reasoning': f'Produto adicionado manualmente pelo comercial'
+        }
+        
+        # Se for alternativo, armazenar a chave correta (product key) da referência
+        if item_type == 'alternativo' and alternative_to:
+            # Preferir a chave completa encontrada; se não, tentar usar o valor passado
+            if alternative_to_key:
+                product_data['alternative_to'] = alternative_to_key
+            else:
+                # armazenar como string — pode ainda ser resolvido em fluxos posteriores
+                product_data['alternative_to'] = str(alternative_to)
+
+            if alternative_to_product:
+                product_data['alternative_to_name'] = alternative_to_product.get('name', 'Produto Principal')
+        
+        budget['families'][mapped_family][product_key] = product_data
+        
+        # Recalcular totais excluindo alternativos
+        family_total = sum(
+            p['price'] * p['quantity'] for p in budget['families'][mapped_family].values()
+            if p['quantity'] > 0 and p.get('item_type', 'incluido') in ['incluido', 'opcional']
+        )
+        
+        # Recalcular totais usando a nova função
+        calculate_and_update_totals(budget)
+        
+        session['current_budget'] = budget
+        
+        return jsonify({
+            'success': True,
+            'message': f'Produto {product["name"]} adicionado com sucesso',
+            'new_total': budget['total_price']
+        })
+        
+    except Exception as e:
+        print(f"ERRO add_product: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+@app.route('/restore_budget_state', methods=['POST'])
+def restore_budget_state():
+    """Restaura o estado do orçamento salvo anteriormente"""
+    try:
+        data = request.get_json()
+        saved_state = data.get('budgetState')
+        
+        if not saved_state:
+            return jsonify({'success': False, 'error': 'Nenhum estado salvo encontrado'})
+        
+        # Restaurar dados na sessão
+        if 'budgetData' in saved_state:
+            budget_data = saved_state['budgetData']
+            
+            # Restaurar informações básicas
+            if 'client_info' in budget_data:
+                session['client_info'] = budget_data['client_info']
+            
+            if 'pool_info' in budget_data:
+                session['pool_info'] = budget_data['pool_info']
+            
+            # Restaurar orçamento completo
+            if 'products' in budget_data:
+                # Reconstruir estrutura do orçamento
+                restored_budget = {
+                    'client_data': budget_data.get('client_info', {}),  # Mapear client_info para client_data
+                    'pool_info': budget_data.get('pool_info', {}),
+                    'family_totals': budget_data.get('family_totals', {}),
+                    'total_price': budget_data.get('total_price', 0),
+                    'families': {}  # Criar estrutura families
+                }
+                
+                # Organizar produtos por família
+                for product_id, product_data in budget_data['products'].items():
+                    family = product_data.get('family', 'acessorios')
+                    if family not in restored_budget['families']:
+                        restored_budget['families'][family] = []
+                    restored_budget['families'][family].append(product_data)
+                
+                # Debug - Log estrutura do orçamento restaurado
+                print(f"DEBUG: Orçamento restaurado com {len(budget_data['products'])} produtos")
+                print(f"DEBUG: Famílias: {list(restored_budget['families'].keys())}")
+                print(f"DEBUG: Total: {restored_budget['total_price']}")
+                
+                session['current_budget'] = restored_budget
+        
+        return jsonify({
+            'success': True,
+            'message': 'Estado do orçamento restaurado com sucesso',
+            'redirect_url': '/budget'
+        })
+        
+    except Exception as e:
+        print(f"ERRO restore_budget_state: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0', port=5000)

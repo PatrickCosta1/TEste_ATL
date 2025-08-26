@@ -1,0 +1,11 @@
+.venv/
+venv/
+__pycache__/
+dist/
+build/
+*.spec
+*.pyc
+*.log
+database/pool_budgets.db
+/.idea/
+.vscode/

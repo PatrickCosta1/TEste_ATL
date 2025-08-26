@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Questionário - Sistema de Orçamentação</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='modern-clean.css') }}" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <a href="/" class="logo">
+                    <div class="logo-icon">
+                        <i class="fas fa-swimming-pool"></i>
+                    </div>
+                    <span>Sistema de Orçamentação</span>
+                </a>
+                
+                <nav class="nav-steps">
+                    <div class="step-indicator completed">
+                        <div class="step-number">✓</div>
+                        <span>Dados do Cliente</span>
+                    </div>
+                    <div class="step-indicator active">
+                        <div class="step-number">2</div>
+                        <span>Questionário</span>
+                    </div>
+                    <div class="step-indicator">
+                        <div class="step-number">3</div>
+                        <span>Orçamento</span>
+                    </div>
+                </nav>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="card fade-in">
+                <div class="card-header text-center">
+                    <h1 class="card-title">
+                        <i class="fas fa-clipboard-list"></i>
+                        Questionário Técnico
+                    </h1>
+                    <p class="card-subtitle">
+                        Responda às questões para gerar o orçamento personalizado
+                    </p>
+                </div>
+
+                <!-- Barra de Progresso -->
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill" style="width: 16.66%"></div>
+                </div>
+
+                <form id="questionnaireForm" action="/generate_budget" method="post" class="slide-up">
+                    
+                    <!-- Seção 1: Dimensões -->
+                    <div class="question-section active" data-section="1">
+                        <h3 style="margin-bottom: 2rem; color: var(--primary);">
+                            <i class="fas fa-ruler-combined"></i>
+                            Dimensões da Piscina
+                        </h3>
+
+                        <div class="grid grid-4">
+                            <div class="form-group">
+                                <label class="form-label" for="comprimento">Comprimento (m)</label>
+                                <input type="number" step="0.01" class="form-input" id="comprimento" name="comprimento" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="largura">Largura (m)</label>
+                                <input type="number" step="0.01" class="form-input" id="largura" name="largura" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="prof_min">Prof. Mínima (m)</label>
+                                <input type="number" step="0.01" class="form-input" id="prof_min" name="prof_min" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="prof_max">Prof. Máxima (m)</label>
+                                <input type="number" step="0.01" class="form-input" id="prof_max" name="prof_max" required>
+                            </div>
+                        </div>
+
+                        <!-- Preview das métricas será inserido aqui pelo JavaScript -->
+                        <div class="metrics-preview" style="display: none;"></div>
+                        
+                        <!-- Campos ocultos para métricas calculadas -->
+                        <input type="hidden" id="calculated_m3_massa" name="m3_massa" value="">
+                        <input type="hidden" id="calculated_m2_fundo" name="m2_fundo" value="">
+                        <input type="hidden" id="calculated_m2_paredes" name="m2_paredes" value="">
+                        <input type="hidden" id="calculated_m2_tela" name="m2_tela" value="">
+                        <input type="hidden" id="calculated_ml_bordadura" name="ml_bordadura" value="">
+                        <input type="hidden" id="calculated_rolos_tl" name="rolos_tl" value="">
+                        <input type="hidden" id="calculated_rolos_3d" name="rolos_3d" value="">
+                    </div>
+
+                    <!-- Seção 2: Condições do Local -->
+                    <div class="question-section" data-section="2">
+                        <h3 style="margin-bottom: 2rem; color: var(--primary);">
+                            <i class="fas fa-map-marker-alt"></i>
+                            Condições do Local
+                        </h3>
+
+                        <div class="form-group">
+                            <label class="form-label">Como é o acesso ao local?</label>
+                            <div class="radio-group">
+                                <div class="radio-option">
+                                    <input type="radio" name="acesso" id="acesso-facil" value="facil" required>
+                                    <label for="acesso-facil">
+                                        <i class="fas fa-truck" style="color: var(--success);"></i><br>
+                                        Fácil
+                                    </label>
+                                </div>
+                                <div class="radio-option">
+                                    <input type="radio" name="acesso" id="acesso-medio" value="medio" required>
+                                    <label for="acesso-medio">
+                                        <i class="fas fa-tools" style="color: var(--warning);"></i><br>
+                                        Médio
+                                    </label>
+                                </div>
+                                <div class="radio-option">
+                                    <input type="radio" name="acesso" id="acesso-dificil" value="dificil" required>
+                                    <label for="acesso-dificil">
+                                        <i class="fas fa-mountain" style="color: var(--error);"></i><br>
+                                        Difícil
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">É necessário escavação?</label>
+                            <div class="radio-group">
+                                <div class="radio-option">
+                                    <input type="radio" name="escavacao" id="escavacao-sim" value="true" required>
+                                    <label for="escavacao-sim">
+                                        <i class="fas fa-shovel" style="color: var(--warning);"></i><br>
+                                        Sim
+                                    </label>
+                                </div>
+                                <div class="radio-option">
+                                    <input type="radio" name="escavacao" id="escavacao-nao" value="false" required>
+                                    <label for="escavacao-nao">
+                                        <i class="fas fa-check-circle" style="color: var(--success);"></i><br>
+                                        Não
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Seção 3: Características da Piscina -->
+                    <div class="question-section" data-section="3">
+                        <h3 style="margin-bottom: 2rem; color: var(--primary);">
+                            <i class="fas fa-swimming-pool"></i>
+                            Características da Piscina
+                        </h3>
+
+                        <div class="form-group">
+                            <label class="form-label">Forma da piscina:</label>
+                            <div class="radio-group">
+                                <div class="radio-option">
+                                    <input type="radio" name="forma" id="forma-standard" value="standard" required>
+                                    <label for="forma-standard">
+                                        <i class="fas fa-square" style="color: var(--success);"></i><br>
+                                        Standard
+                                    </label>
+                                </div>
+                                <div class="radio-option">
+                                    <input type="radio" name="forma" id="forma-especial" value="especial" required>
+                                    <label for="forma-especial">
+                                        <i class="fas fa-star" style="color: var(--warning);"></i><br>
+                                        Especial
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Tipo de piscina:</label>
+                            <div class="radio-group">
+                                <div class="radio-option">
+                                    <input type="radio" name="tipo_piscina" id="tipo-skimmer" value="skimmer" required>
+                                    <label for="tipo-skimmer">
+                                        <i class="fas fa-water" style="color: var(--primary);"></i><br>
+                                        Skimmer
+                                    </label>
+                                </div>
+                                <div class="radio-option">
+                                    <input type="radio" name="tipo_piscina" id="tipo-espelho" value="espelho_dagua" required>
+                                    <label for="tipo-espelho">
+                                        <i class="fas fa-water" style="color: var(--secondary);"></i><br>
+                                        Espelho d'Água
+                                    </label>
+                                </div>
+                                <div class="radio-option">
+                                    <input type="radio" name="tipo_piscina" id="tipo-transbordo" value="transbordo" required>
+                                    <label for="tipo-transbordo">
+                                        <i class="fas fa-wave-square" style="color: var(--accent);"></i><br>
+                                        Transbordo
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Já pensou em algum tipo de tratamento para a água?</label>
+                            <div class="radio-group">
+                                <div class="radio-option">
+                                    <input type="radio" name="tratamento_agua" id="tratamento-cloro-manual" value="cloro_manual" required>
+                                    <label for="tratamento-cloro-manual">Sim, cloro manual</label>
+                                </div>
+                                <div class="radio-option">
+                                    <input type="radio" name="tratamento_agua" id="tratamento-cloro-automatico" value="cloro_automatico" required>
+                                    <label for="tratamento-cloro-automatico">Sim, cloro automático</label>
+                                </div>
+                                <div class="radio-option">
+                                    <input type="radio" name="tratamento_agua" id="tratamento-salino" value="clorador_salino" required>
+                                    <label for="tratamento-salino">Sim, clorador salino</label>
+                                </div>
+                                <div class="radio-option">
+                                    <input type="radio" name="tratamento_agua" id="tratamento-salino-ph" value="clorador_salino_ph" required>
+                                    <label for="tratamento-salino-ph">Sim, clorador salino + PH</label>
+                                </div>
+                                <div class="radio-option">
+                                    <input type="radio" name="tratamento_agua" id="tratamento-salino-ph-uv" value="clorador_salino_ph_uv" required>
+                                    <label for="tratamento-salino-ph-uv">Sim, clorador salino + PH + UV</label>
+                                </div>
+                                <div class="radio-option">
+                                    <input type="radio" name="tratamento_agua" id="tratamento-nao" value="nao" required>
+                                    <label for="tratamento-nao">Não</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">É uma construção nova ou remodelação?</label>
+                            <div class="radio-group">
+                                <div class="radio-option">
+                                    <input type="radio" name="tipo_construcao" id="construcao-nova" value="nova" required>
+                                    <label for="construcao-nova">Construção nova</label>
+                                </div>
+                                <div class="radio-option">
+                                    <input type="radio" name="tipo_construcao" id="construcao-remodelacao" value="remodelacao" required>
+                                    <label for="construcao-remodelacao">Remodelação</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Tem Cobertura?</label>
+                            <div class="radio-group">
+                                <div class="radio-option">
+                                    <input type="radio" name="cobertura" id="cobertura-laminas" value="laminas" required onchange="toggleCoberturaSubOptions()">
+                                    <label for="cobertura-laminas">Sim, cobertura de lâminas</label>
+                                </div>
+                                <div class="radio-option">
+                                    <input type="radio" name="cobertura" id="cobertura-bolhas" value="bolhas" required onchange="toggleCoberturaSubOptions()">
+                                    <label for="cobertura-bolhas">Sim, de bolhas</label>
+                                </div>
+                                <div class="radio-option">
+                                    <input type="radio" name="cobertura" id="cobertura-barras" value="barras" required onchange="toggleCoberturaSubOptions()">
+                                    <label for="cobertura-barras">Sim, de barras</label>
+                                </div>
+                                <div class="radio-option">
+                                    <input type="radio" name="cobertura" id="cobertura-lona" value="lona" required onchange="toggleCoberturaSubOptions()">
+                                    <label for="cobertura-lona">Sim, de lona</label>
+                                </div>
+                                <div class="radio-option">
+                                    <input type="radio" name="cobertura" id="cobertura-nao" value="nao" required onchange="toggleCoberturaSubOptions()">
+                                    <label for="cobertura-nao">Não</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sub-opções para cobertura de lâminas -->
+                        <div class="form-group" id="cobertura-laminas-options" style="display: none;">
+                            <label class="form-label">Tipo de cobertura de lâminas:</label>
+                            <div class="radio-group">
+                                <div class="radio-option">
+                                    <input type="radio" name="tipo_cobertura_laminas" id="laminas-submersa" value="submersa_praia">
+                                    <label for="laminas-submersa">Cobertura submersa na zona de praia</label>
+                                </div>
+                                <div class="radio-option">
+                                    <input type="radio" name="tipo_cobertura_laminas" id="laminas-fora" value="fora_praia">
+                                    <label for="laminas-fora">Cobertura fora da zona de praia</label>
+                                </div>
+                                <div class="radio-option">
+                                    <input type="radio" name="tipo_cobertura_laminas" id="laminas-elevada" value="elevada">
+                                    <label for="laminas-elevada">Cobertura elevada</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Seção 4: Acabamentos -->
+                    <div class="question-section" data-section="4">
+                        <h3 style="margin-bottom: 2rem; color: var(--primary);">
+                            <i class="fas fa-palette"></i>
+                            Acabamentos
+                        </h3>
+
+                        <div class="form-group">
+                            <label class="form-label">Tipo de revestimento:</label>
+                            <div class="radio-group">
+                                <div class="radio-option">
+                                    <input type="radio" name="revestimento" id="rev-tela" value="tela" required>
+                                    <label for="rev-tela">
+                                        <i class="fas fa-paint-roller" style="color: var(--success);"></i><br>
+                                        Tela
+                                    </label>
+                                </div>
+                                <div class="radio-option">
+                                    <input type="radio" name="revestimento" id="rev-ceramica" value="ceramica" required>
+                                    <label for="rev-ceramica">
+                                        <i class="fas fa-th-large" style="color: var(--secondary);"></i><br>
+                                        Cerâmica
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Seção 5: Tecnologia -->
+                    <div class="question-section" data-section="5">
+                        <h3 style="margin-bottom: 2rem; color: var(--primary);">
+                            <i class="fas fa-microchip"></i>
+                            Tecnologia
+                        </h3>
+
+                        <div class="form-group">
+                            <label class="form-label">Deseja sistema domótico?</label>
+                            <div class="radio-group">
+                                <div class="radio-option">
+                                    <input type="radio" name="domotica" id="domotica-sim" value="true" required>
+                                    <label for="domotica-sim">
+                                        <i class="fas fa-mobile-alt" style="color: var(--accent);"></i><br>
+                                        Sim
+                                    </label>
+                                </div>
+                                <div class="radio-option">
+                                    <input type="radio" name="domotica" id="domotica-nao" value="false" required>
+                                    <label for="domotica-nao">
+                                        <i class="fas fa-times-circle" style="color: var(--text-muted);"></i><br>
+                                        Não
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Seção 6: Instalações -->
+                    <div class="question-section" data-section="6">
+                        <h3 style="margin-bottom: 2rem; color: var(--primary);">
+                            <i class="fas fa-home"></i>
+                            Instalações
+                        </h3>
+
+                        <div class="form-group">
+                            <label class="form-label">Localização:</label>
+                            <div class="radio-group">
+                                <div class="radio-option">
+                                    <input type="radio" name="localizacao" id="loc-interior" value="interior" required>
+                                    <label for="loc-interior">
+                                        <i class="fas fa-home" style="color: var(--secondary);"></i><br>
+                                        Interior
+                                    </label>
+                                </div>
+                                <div class="radio-option">
+                                    <input type="radio" name="localizacao" id="loc-exterior" value="exterior" required>
+                                    <label for="loc-exterior">
+                                        <i class="fas fa-sun" style="color: var(--warning);"></i><br>
+                                        Exterior
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Tipo de corrente elétrica:</label>
+                            <div class="radio-group">
+                                <div class="radio-option">
+                                    <input type="radio" name="luz" id="luz-mono" value="monofasica" required>
+                                    <label for="luz-mono">
+                                        <i class="fas fa-bolt" style="color: var(--success);"></i><br>
+                                        Monofásica
+                                    </label>
+                                </div>
+                                <div class="radio-option">
+                                    <input type="radio" name="luz" id="luz-tri" value="trifasica" required>
+                                    <label for="luz-tri">
+                                        <i class="fas fa-charging-station" style="color: var(--warning);"></i><br>
+                                        Trifásica
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Casa das máquinas estará abaixo do nível da água?</label>
+                            <div class="radio-group">
+                                <div class="radio-option">
+                                    <input type="radio" name="casa_maquinas_abaixo" id="casa-sim" value="sim" required>
+                                    <label for="casa-sim">
+                                        <i class="fas fa-arrow-down" style="color: var(--primary);"></i><br>
+                                        Sim
+                                    </label>
+                                </div>
+                                <div class="radio-option">
+                                    <input type="radio" name="casa_maquinas_abaixo" id="casa-nao" value="nao" required>
+                                    <label for="casa-nao">
+                                        <i class="fas fa-level-up-alt" style="color: var(--success);"></i><br>
+                                        Não
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="form-group" style="margin-top: 1rem;">
+                                <label class="form-label" for="casa_maquinas_desc">Observações sobre a casa das máquinas:</label>
+                                <textarea class="form-input" id="casa_maquinas_desc" name="casa_maquinas_desc" placeholder="Descreva detalhes sobre a localização da casa das máquinas..." rows="3"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Tipo de luzes preferido:</label>
+                            <div class="radio-group">
+                                <div class="radio-option">
+                                    <input type="radio" name="tipo_luzes" id="luzes-branco-frio" value="branco_frio" required>
+                                    <label for="luzes-branco-frio">
+                                        <i class="fas fa-lightbulb" style="color: #87CEEB;"></i><br>
+                                        Branco Frio
+                                    </label>
+                                </div>
+                                <div class="radio-option">
+                                    <input type="radio" name="tipo_luzes" id="luzes-branco-adaptavel" value="branco_adaptavel" required>
+                                    <label for="luzes-branco-adaptavel">
+                                        <i class="fas fa-adjust" style="color: var(--warning);"></i><br>
+                                        Branco Adaptável
+                                    </label>
+                                </div>
+                                <div class="radio-option">
+                                    <input type="radio" name="tipo_luzes" id="luzes-rgb" value="rgb" required>
+                                    <label for="luzes-rgb">
+                                        <i class="fas fa-palette" style="color: var(--primary);"></i><br>
+                                        RGB
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Navigation -->
+                    <div class="flex" style="justify-content: space-between; margin-top: 2rem;">
+                        <button type="button" id="prevBtn" class="btn btn-secondary" style="display: none;">
+                            <i class="fas fa-arrow-left"></i>
+                            Anterior
+                        </button>
+                        
+                        <div style="margin-left: auto;">
+                            <button type="button" id="nextBtn" class="btn btn-primary">
+                                Próximo
+                                <i class="fas fa-arrow-right"></i>
+                            </button>
+                            
+                            <button type="submit" id="submitBtn" class="btn btn-success" style="display: none;">
+                                <i class="fas fa-check"></i>
+                                Gerar Orçamento
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <style>
+        /* Seções do Questionário */
+        .question-section {
+            display: none;
+            min-height: 400px;
+        }
+
+        .question-section.active {
+            display: block;
+            animation: fadeInSlide 0.5s ease-out;
+        }
+
+        @keyframes fadeInSlide {
+            from {
+                opacity: 0;
+                transform: translateX(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* Preview das métricas */
+        .metrics-preview {
+            background: var(--surface-light);
+            border-radius: var(--radius-lg);
+            padding: var(--space-lg);
+            margin-top: var(--space-lg);
+            border: 2px solid var(--border-light);
+        }
+
+        .metrics-preview.show {
+            display: block !important;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                max-height: 0;
+            }
+            to {
+                opacity: 1;
+                max-height: 200px;
+            }
+        }
+
+        .metrics-preview h4 {
+            color: var(--primary);
+            margin-bottom: var(--space-md);
+        }
+    </style>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            let currentSection = 1;
+            const totalSections = 6;
+            const nextBtn = document.getElementById('nextBtn');
+            const prevBtn = document.getElementById('prevBtn');
+            const submitBtn = document.getElementById('submitBtn');
+            const form = document.getElementById('questionnaireForm');
+            
+            // Handler para submissão do formulário - INTERCEPTAR COMPLETAMENTE
+            form.addEventListener('submit', function(e) {
+                e.preventDefault(); // Prevenir submissão normal SEMPRE
+                console.log('Formulário interceptado - impedindo submissão normal');
+                
+                // Validar última seção antes de submeter
+                if (!validateCurrentSection()) {
+                    alert('Por favor, preencha todos os campos obrigatórios antes de gerar o orçamento.');
+                    return false;
+                }
+                
+                console.log('Validação passou, enviando via AJAX...');
+                
+                // Mostrar loading no botão
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gerando Orçamento...';
+                submitBtn.disabled = true;
+                
+                // Preparar dados do formulário
+                const formData = new FormData(form);
+                console.log('Dados do formulário:');
+                for (let [key, value] of formData.entries()) {
+                    console.log(`${key}: ${value}`);
+                }
+                
+                // Enviar via AJAX
+                fetch('/generate_budget', {
+                    method: 'POST',
+                    body: formData,
+                    redirect: 'follow'  // Permitir seguir redirecionamentos
+                })
+                .then(response => {
+                    console.log('Resposta recebida:', response);
+                    console.log('Status:', response.status);
+                    console.log('URL final:', response.url);
+                    
+                    // Se foi redirecionado para /budget, ir para lá
+                    if (response.url.includes('/budget')) {
+                        console.log('Redirecionamento para budget detectado');
+                        window.location.href = '/budget';
+                        return;
+                    }
+                    
+                    // Se voltou para questionnaire, há erro
+                    if (response.url.includes('/questionnaire')) {
+                        console.error('Redirecionado de volta para questionnaire - erro no servidor');
+                        alert('Erro ao gerar orçamento. Verifique os dados e tente novamente.');
+                        submitBtn.innerHTML = '<i class="fas fa-calculator"></i> Gerar Orçamento';
+                        submitBtn.disabled = false;
+                        return;
+                    }
+                    
+                    return response.text();
+                })
+                .then(data => {
+                    console.log('Dados da resposta:', data);
+                    // Fallback - se não foi redirecionado, tentar ir para budget
+                    if (data && !window.location.href.includes('/budget')) {
+                        console.log('Redirecionando manualmente para /budget');
+                        window.location.href = '/budget';
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro:', error);
+                    alert('Erro ao gerar orçamento: ' + error.message);
+                    // Restaurar botão
+                    submitBtn.innerHTML = '<i class="fas fa-check"></i> Gerar Orçamento';
+                    submitBtn.disabled = false;
+                });
+            });
+            
+            // Handler para o botão submit diretamente também
+            submitBtn.addEventListener('click', function(e) {
+                console.log('Botão submit clicado');
+                if (form.checkValidity()) {
+                    console.log('Formulário válido, submetendo...');
+                } else {
+                    console.log('Formulário inválido');
+                    e.preventDefault();
+                }
+            });
+
+            function updateProgress() {
+                const progress = (currentSection / totalSections) * 100;
+                document.getElementById('progressFill').style.width = progress + '%';
+            }
+
+            function showSection(sectionNumber) {
+                // Ocultar todas as seções
+                document.querySelectorAll('.question-section').forEach(section => {
+                    section.classList.remove('active');
+                });
+
+                // Mostrar seção atual
+                document.querySelector(`[data-section="${sectionNumber}"]`).classList.add('active');
+
+                // Atualizar botões
+                prevBtn.style.display = sectionNumber === 1 ? 'none' : 'inline-flex';
+                nextBtn.style.display = sectionNumber === totalSections ? 'none' : 'inline-flex';
+                submitBtn.style.display = sectionNumber === totalSections ? 'inline-flex' : 'none';
+
+                updateProgress();
+            }
+
+            function validateCurrentSection() {
+                const currentSectionEl = document.querySelector(`[data-section="${currentSection}"]`);
+                const requiredInputs = currentSectionEl.querySelectorAll('input[required]');
+                
+                for (let input of requiredInputs) {
+                    if (input.type === 'radio') {
+                        const radioGroup = currentSectionEl.querySelectorAll(`input[name="${input.name}"]`);
+                        const checked = Array.from(radioGroup).some(radio => radio.checked);
+                        if (!checked) return false;
+                    } else if (!input.value) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+            nextBtn.addEventListener('click', function() {
+                if (validateCurrentSection()) {
+                    currentSection++;
+                    showSection(currentSection);
+                } else {
+                    alert('Por favor, preencha todos os campos obrigatórios.');
+                }
+            });
+
+            prevBtn.addEventListener('click', function() {
+                currentSection--;
+                showSection(currentSection);
+            });
+
+            // Cálculo em tempo real das métricas
+            const dimensionInputs = ['comprimento', 'largura', 'prof_min', 'prof_max'];
+            dimensionInputs.forEach(inputId => {
+                document.getElementById(inputId).addEventListener('input', calculateMetrics);
+            });
+
+            function calculateMetrics() {
+                const comprimento = parseFloat(document.getElementById('comprimento').value) || 0;
+                const largura = parseFloat(document.getElementById('largura').value) || 0;
+                const profMin = parseFloat(document.getElementById('prof_min').value) || 0;
+                const profMax = parseFloat(document.getElementById('prof_max').value) || 0;
+
+                if (comprimento > 0 && largura > 0 && profMin > 0 && profMax > 0) {
+                    const profMedia = (profMin + profMax) / 2;
+                    const volume = comprimento * largura * profMedia;
+                    const m3h = volume / 4;
+
+                    // Mostrar preview das métricas
+                    let previewEl = document.querySelector('.metrics-preview');
+                    if (!previewEl) {
+                        previewEl = document.createElement('div');
+                        previewEl.className = 'metrics-preview';
+                        document.querySelector('[data-section="1"]').appendChild(previewEl);
+                    }
+
+                    // Calcular todas as métricas adicionais
+                    const m2_paredes = (comprimento * 2 + largura * 2) * profMedia;
+                    const m3_massa = (((comprimento + 0.03) * (largura + 0.3)) * 0.2) + (m2_paredes * 0.2);
+                    const m2_fundo = (comprimento / 1.6) * largura * 1.65;
+                    const profMaxima = parseFloat(document.getElementById('prof_max').value) || 0;
+                    let m2_tela = 0;
+                    let rolos_tl = 0;
+                    let rolos_3d = 0;
+                    
+                    if (profMaxima < 1.65) {
+                        m2_tela = (comprimento * 2 + largura * 2 + comprimento / 1.6 * largura) * 1.65;
+                        rolos_tl = Math.floor((m2_tela / 42) + 1);
+                        rolos_3d = Math.floor((m2_tela / 33) + 1);
+                    }
+                    
+                    const ml_bordadura = comprimento + comprimento + largura + largura + (0.5 * 4);
+
+                    previewEl.innerHTML = `
+                        <h4><i class="fas fa-calculator"></i> Cálculos Automáticos</h4>
+                        <div class="grid grid-4" style="gap: 1rem;">
+                            <div>
+                                <strong>Volume:</strong><br>
+                                <span style="color: var(--success);">${volume.toFixed(2)} m³</span>
+                            </div>
+                            <div>
+                                <strong>Filtração:</strong><br>
+                                <span style="color: var(--success);">${m3h.toFixed(2)} m³/h</span>
+                            </div>
+                            <div>
+                                <strong>Prof. Média:</strong><br>
+                                <span style="color: var(--success);">${profMedia.toFixed(2)} m</span>
+                            </div>
+                            <div>
+                                <strong>m³ Massa:</strong><br>
+                                <span style="color: var(--info);">${m3_massa.toFixed(2)} m³</span>
+                            </div>
+                            <div>
+                                <strong>m² Fundo:</strong><br>
+                                <span style="color: var(--info);">${m2_fundo.toFixed(2)} m²</span>
+                            </div>
+                            <div>
+                                <strong>m² Paredes:</strong><br>
+                                <span style="color: var(--info);">${m2_paredes.toFixed(2)} m²</span>
+                            </div>
+                            <div>
+                                <strong>m² Tela:</strong><br>
+                                <span style="color: var(--info);">${m2_tela.toFixed(2)} m²</span>
+                            </div>
+                            <div>
+                                <strong>ml Bordadura:</strong><br>
+                                <span style="color: var(--info);">${ml_bordadura.toFixed(2)} ml</span>
+                            </div>
+                            <div>
+                                <strong>Rolos TL:</strong><br>
+                                <span style="color: var(--warning);">${rolos_tl}</span>
+                            </div>
+                            <div>
+                                <strong>Rolos 3D:</strong><br>
+                                <span style="color: var(--warning);">${rolos_3d}</span>
+                            </div>
+                        </div>
+                    `;
+                    previewEl.classList.add('show');
+                    
+                    // Armazenar valores calculados nos campos ocultos
+                    document.getElementById('calculated_m3_massa').value = m3_massa.toFixed(2);
+                    document.getElementById('calculated_m2_fundo').value = m2_fundo.toFixed(2);
+                    document.getElementById('calculated_m2_paredes').value = m2_paredes.toFixed(2);
+                    document.getElementById('calculated_m2_tela').value = m2_tela.toFixed(2);
+                    document.getElementById('calculated_ml_bordadura').value = ml_bordadura.toFixed(2);
+                    document.getElementById('calculated_rolos_tl').value = rolos_tl;
+                    document.getElementById('calculated_rolos_3d').value = rolos_3d;
+                }
+            }
+
+            // Efeitos visuais para inputs
+            const inputs = document.querySelectorAll('.form-input');
+            inputs.forEach(input => {
+                input.addEventListener('focus', function() {
+                    this.style.transform = 'scale(1.02)';
+                });
+                
+                input.addEventListener('blur', function() {
+                    this.style.transform = 'scale(1)';
+                });
+            });
+
+            // Inicializar
+            showSection(1);
+            updateProgress();
+
+            // Verificar e restaurar automaticamente estado salvo
+            checkAndRestoreState();
+        });
+
+        // Função para controlar a visibilidade das sub-opções de cobertura
+        function toggleCoberturaSubOptions() {
+            const coberturaValue = document.querySelector('input[name="cobertura"]:checked').value;
+            const laminasOptions = document.getElementById('cobertura-laminas-options');
+            
+            if (coberturaValue === 'laminas') {
+                laminasOptions.style.display = 'block';
+                // Tornar os sub-campos obrigatórios
+                document.querySelectorAll('input[name="tipo_cobertura_laminas"]').forEach(input => {
+                    input.required = true;
+                });
+            } else {
+                laminasOptions.style.display = 'none';
+                // Remover obrigatoriedade e limpar seleção
+                document.querySelectorAll('input[name="tipo_cobertura_laminas"]').forEach(input => {
+                    input.required = false;
+                    input.checked = false;
+                });
+            }
+        }
+
+        // Função para verificar e restaurar estado automaticamente
+        function checkAndRestoreState() {
+            const savedState = sessionStorage.getItem('savedBudgetState');
+            if (savedState) {
+                try {
+                    const state = JSON.parse(savedState);
+                    if (state && state.budgetData) {
+                        // Restaurar automaticamente sem perguntar
+                        restoreSavedStateDirectly(state);
+                    }
+                } catch (e) {
+                    console.error('Erro ao verificar estado salvo:', e);
+                }
+            }
+        }
+
+        function restoreSavedStateDirectly(state) {
+            // Enviar para o backend para restaurar na sessão
+            fetch('/restore_budget_state', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    budgetState: state
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Mostrar mensagem de restauração e redirecionar
+                    const restoreDiv = document.createElement('div');
+                    restoreDiv.style.cssText = `
+                        position: fixed;
+                        top: 20px;
+                        right: 20px;
+                        background: linear-gradient(135deg, #10b981, #059669);
+                        color: white;
+                        padding: 15px 25px;
+                        border-radius: 8px;
+                        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+                        z-index: 1001;
+                        font-weight: 600;
+                        animation: slideInRight 0.3s ease;
+                    `;
+                    restoreDiv.innerHTML = `
+                        <i class="fas fa-check-circle"></i> Orçamento restaurado automaticamente!<br>
+                        <small style="opacity: 0.8;">Redirecionando...</small>
+                    `;
+                    document.body.appendChild(restoreDiv);
+
+                    // Limpar estado salvo após usar
+                    sessionStorage.removeItem('savedBudgetState');
+
+                    setTimeout(() => {
+                        window.location.href = '/budget';
+                    }, 1500);
+                } else {
+                    console.error('Erro ao restaurar orçamento:', data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+            });
+        }
+    </script>
+</body>
+</html>

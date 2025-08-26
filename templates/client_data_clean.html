@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dados do Cliente - Sistema de Orçamentação</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='modern-clean.css') }}" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <a href="/" class="logo">
+                    <div class="logo-icon">
+                        <i class="fas fa-swimming-pool"></i>
+                    </div>
+                    <span>Sistema de Orçamentação</span>
+                </a>
+                
+                <nav class="nav-steps">
+                    <div class="step-indicator active">
+                        <div class="step-number">1</div>
+                        <span>Dados do Cliente</span>
+                    </div>
+                    <div class="step-indicator">
+                        <div class="step-number">2</div>
+                        <span>Questionário</span>
+                    </div>
+                    <div class="step-indicator">
+                        <div class="step-number">3</div>
+                        <span>Orçamento</span>
+                    </div>
+                </nav>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="card fade-in">
+                <div class="card-header text-center">
+                    <h1 class="card-title">
+                        <i class="fas fa-user-plus"></i>
+                        Dados do Cliente
+                    </h1>
+                    <p class="card-subtitle">
+                        Insira as informações básicas do projeto
+                    </p>
+                </div>
+
+                <form action="/save_client_data" method="post" class="slide-up">
+                    <div class="grid grid-2">
+                        <div class="form-group">
+                            <label class="form-label" for="clientName">Nome do Cliente</label>
+                            <input type="text" class="form-input" id="clientName" name="clientName" required 
+                                   placeholder="Nome do Cliente">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="commercialName">Nome do Comercial</label>
+                            <input type="text" class="form-input" id="commercialName" name="commercialName" required 
+                                   placeholder="Nome do Comercial">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="proposalNumber">Número da Proposta</label>
+                            <input type="text" class="form-input" id="proposalNumber" name="proposalNumber" required 
+                                   placeholder="Ex: PO 001">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="date">Data da Proposta</label>
+                            <input type="date" class="form-input" id="date" name="date" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="address">Morada</label>
+                        <input type="text" class="form-input" id="address" name="address" 
+                               placeholder="Morada">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="observations">Observações (Opcional)</label>
+                        <textarea class="form-input" id="observations" name="observations" rows="4" 
+                                  placeholder="Informações adicionais sobre o projeto..."></textarea>
+                    </div>
+
+                    <div class="text-center" style="margin-top: 2rem;">
+                        <button type="submit" class="btn btn-primary btn-lg hover-lift">
+                            <i class="fas fa-arrow-right"></i>
+                            Continuar para Questionário
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Auto-fill da data atual
+            const dateInput = document.getElementById('date');
+            const today = new Date().toISOString().split('T')[0];
+            dateInput.value = today;
+
+            // Validação visual em tempo real
+            const requiredInputs = document.querySelectorAll('input[required]');
+            const submitBtn = document.querySelector('.btn-primary');
+
+            function checkFormValidity() {
+                const allFilled = Array.from(requiredInputs).every(input => input.value.trim() !== '');
+                submitBtn.style.opacity = allFilled ? '1' : '0.7';
+                submitBtn.disabled = !allFilled;
+            }
+
+            requiredInputs.forEach(input => {
+                input.addEventListener('input', checkFormValidity);
+                
+                input.addEventListener('focus', function() {
+                    this.style.transform = 'scale(1.02)';
+                });
+                
+                input.addEventListener('blur', function() {
+                    this.style.transform = 'scale(1)';
+                });
+            });
+
+            // Validação inicial
+            checkFormValidity();
+        });
+    </script>
+</body>
+</html>

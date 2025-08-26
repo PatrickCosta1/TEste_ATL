@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Orçamentação de Piscinas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='modern-clean.css') }}" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header Simples -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <i class="fas fa-swimming-pool"></i>
+                    </div>
+                    <span>Sistema de Orçamentação de Piscinas</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Conteúdo Principal -->
+        <main class="main-content">
+            <!-- Seção Principal -->
+            <section class="text-center">
+                <div class="section-header">
+                    <h1 class="section-title">Orçamentos Profissionais de Piscinas</h1>
+                    <p class="section-subtitle">
+                        Crie orçamentos detalhados e precisos em poucos minutos
+                    </p>
+                </div>
+
+                <!-- Botão Principal -->
+                <div style="margin-top: 3rem;">
+                    <a href="/client_data" class="btn btn-primary btn-xl hover-lift">
+                        <i class="fas fa-play"></i>
+                        Começar Orçamento
+                    </a>
+                </div>
+            </section>
+
+            <!-- Características Principais -->
+            <section style="margin-top: 4rem;">
+                <div class="grid grid-3">
+                    <div class="card text-center">
+                        <div style="color: var(--primary); font-size: 3rem; margin-bottom: 1rem;">
+                            <i class="fas fa-calculator"></i>
+                        </div>
+                        <h3 style="margin-bottom: 1rem;">Cálculo Automático</h3>
+                        <p>Cálculos precisos de volume, filtração e materiais necessários</p>
+                    </div>
+
+                    <div class="card text-center">
+                        <div style="color: var(--success); font-size: 3rem; margin-bottom: 1rem;">
+                            <i class="fas fa-file-pdf"></i>
+                        </div>
+                        <h3 style="margin-bottom: 1rem;">PDF Profissional</h3>
+                        <p>Exportação automática para documentos profissionais</p>
+                    </div>
+
+                    <div class="card text-center">
+                        <div style="color: var(--secondary); font-size: 3rem; margin-bottom: 1rem;">
+                            <i class="fas fa-mobile-alt"></i>
+                        </div>
+                        <h3 style="margin-bottom: 1rem;">Fácil de Usar</h3>
+                        <p>Interface intuitiva que funciona em qualquer dispositivo</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Como Funciona -->
+            <section style="margin-top: 4rem;">
+                <div class="section-header">
+                    <h2 class="section-title" style="font-size: 2rem;">Como Funciona</h2>
+                </div>
+
+                <div class="grid grid-3">
+                    <div class="text-center">
+                        <div style="width: 80px; height: 80px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; color: white; font-size: 2rem;">
+                            1
+                        </div>
+                        <h4 style="margin-bottom: 1rem;">Dados do Cliente</h4>
+                        <p>Insira as informações básicas do projeto</p>
+                    </div>
+
+                    <div class="text-center">
+                        <div style="width: 80px; height: 80px; background: var(--secondary); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; color: white; font-size: 2rem;">
+                            2
+                        </div>
+                        <h4 style="margin-bottom: 1rem;">Especificações</h4>
+                        <p>Responda questões sobre a piscina desejada</p>
+                    </div>
+
+                    <div class="text-center">
+                        <div style="width: 80px; height: 80px; background: var(--success); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; color: white; font-size: 2rem;">
+                            3
+                        </div>
+                        <h4 style="margin-bottom: 1rem;">Orçamento Pronto</h4>
+                        <p>Receba o orçamento completo e exportar PDF</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- CTA Final -->
+            <section style="margin-top: 4rem; text-center;">
+                <div class="card" style="background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); color: white; border: none;">
+                    <h3 style="margin-bottom: 1rem; color: white;">Pronto para começar?</h3>
+                    <p style="margin-bottom: 2rem; color: rgba(255,255,255,0.9);">
+                        Crie seu primeiro orçamento agora mesmo
+                    </p>
+                    <a href="/client_data" class="btn" style="background: white; color: var(--primary);">
+                        <i class="fas fa-arrow-right"></i>
+                        Iniciar Orçamento
+                    </a>
+                </div>
+            </section>
+        </main>
+    </div>
+</body>
+</html>

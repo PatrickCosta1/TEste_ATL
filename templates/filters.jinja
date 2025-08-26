@@ -1,0 +1,10 @@
+# Filtros Jinja personalizados para nomes de famílias
+
+def family_display_name(family_name):
+    mapping = {
+        'filtracao': 'Filtração',
+        'recirculacao_iluminacao': 'Recirculação e Iluminação',
+        'tratamento_agua': 'Tratamento da Água',
+        'revestimento': 'Revestimento',
+    }
+    return mapping.get(family_name, family_name.replace('_', ' ').title())
