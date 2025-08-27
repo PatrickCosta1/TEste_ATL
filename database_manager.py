@@ -7,7 +7,12 @@ from datetime import datetime, date
 from typing import Dict, List, Optional, Any
 import os
 import sys
-
+try:
+    from default_data import products, product_families, product_categories
+except ImportError:
+    products = []
+    product_families = []
+    product_categories = []
 class DatabaseManager:
     """Gestor da base de dados de produtos e orçamentos"""
     
@@ -331,80 +336,155 @@ class DatabaseManager:
             conn.close()
     
     def get_product_by_id(self, product_id: str) -> Optional[Dict]:
-        """Busca um produto específico pelo ID"""
-        conn = self.get_connection()
-        cursor = conn.cursor()
-        
-        print(f"DEBUG get_product_by_id: Procurando produto ID={product_id} (tipo: {type(product_id)})")
-        
-        cursor.execute("""
-            SELECT p.*, pc.name as category_name, pf.name as family_name
-            FROM products p
-            JOIN product_categories pc ON p.category_id = pc.id
-            JOIN product_families pf ON pc.family_id = pf.id
-            WHERE p.id = ? AND p.is_active = 1
-        """, (product_id,))
-        
-        row = cursor.fetchone()
-        
-        if row:
-            product = dict(row)
-            print(f"DEBUG: Produto encontrado - {product['name']} (categoria: {product['category_name']}, família: {product['family_name']})")
-            product['attributes'] = self.get_product_attributes(int(product['id']))
+        """Busca um produto específico pelo ID, com fallback para dados default"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT p.*, pc.name as category_name, pf.name as family_name
+                FROM products p
+                JOIN product_categories pc ON p.category_id = pc.id
+                JOIN product_families pf ON pc.family_id = pf.id
+                WHERE p.id = ? AND p.is_active = 1
+            """, (product_id,))
+            row = cursor.fetchone()
+            if row:
+                product = dict(row)
+                product['attributes'] = self.get_product_attributes(int(product['id']))
+                conn.close()
+                return product
             conn.close()
-            return product
-        else:
-            print(f"DEBUG: Nenhum produto encontrado com ID={product_id}")
-            conn.close()
-            return None
+        except Exception as e:
+            print(f"[Fallback] Erro ao acessar BD: {e}")
+        # Fallback para dados default
+        for prod in products:
+            if str(prod['id']) == str(product_id) and prod.get('is_active', 1):
+                # Buscar categoria e família
+                cat = next((c for c in product_categories if c['id'] == prod['category_id']), None)
+                fam = next((f for f in product_families if cat and f['id'] == cat['family_id']), None)
+                prod_copy = prod.copy()
+                prod_copy['category_name'] = cat['name'] if cat else None
+                prod_copy['family_name'] = fam['name'] if fam else None
+                prod_copy['attributes'] = self.get_product_attributes(prod['id'])
+                return prod_copy
+        return None
     
     def get_products_by_family(self, family_name: str) -> List[Dict]:
-        """Busca todos os produtos de uma família específica"""
-        conn = self.get_connection()
-        cursor = conn.cursor()
-        
-        # Buscar por nome da família exato
-        cursor.execute("""
-            SELECT p.*, pc.name as category_name, pf.name as family_name
-            FROM products p
-            JOIN product_categories pc ON p.category_id = pc.id
-            JOIN product_families pf ON pc.family_id = pf.id
-            WHERE pf.name = ? AND p.is_active = 1
-            ORDER BY pc.display_order, p.name
-        """, (family_name,))
-        
-        products = []
-        for row in cursor.fetchall():
-            product = dict(row)
-            product['attributes'] = self.get_product_attributes(product['id'])
-            products.append(product)
-        
-        conn.close()
-        print(f"DEBUG: Encontrados {len(products)} produtos para família '{family_name}'")
-        for p in products:
-            print(f"  - {p['name']} (ID: {p['id']})")
-        
-        return products
+        """Busca todos os produtos de uma família específica, com fallback para dados default"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT p.*, pc.name as category_name, pf.name as family_name
+                FROM products p
+                JOIN product_categories pc ON p.category_id = pc.id
+                JOIN product_families pf ON pc.family_id = pf.id
+                WHERE pf.name = ? AND p.is_active = 1
+                ORDER BY pc.display_order, p.name
+            """, (family_name,))
+            products_list = []
+            for row in cursor.fetchall():
+                product = dict(row)
+                product['attributes'] = self.get_product_attributes(product['id'])
+                products_list.append(product)
+            conn.close()
+            if products_list:
+                return products_list
+        except Exception as e:
+            print(f"[Fallback] Erro ao acessar BD: {e}")
+        # Fallback para dados default
+        fam = next((f for f in product_families if f['name'] == family_name), None)
+        if not fam:
+            return []
+        fam_id = fam['id']
+        cats = [c for c in product_categories if c['family_id'] == fam_id]
+        cat_ids = [c['id'] for c in cats]
+        result = []
+        for prod in products:
+            if prod.get('category_id') in cat_ids and prod.get('is_active', 1):
+                cat = next((c for c in cats if c['id'] == prod['category_id']), None)
+                prod_copy = prod.copy()
+                prod_copy['category_name'] = cat['name'] if cat else None
+                prod_copy['family_name'] = fam['name']
+                prod_copy['attributes'] = self.get_product_attributes(prod['id'])
+                result.append(prod_copy)
+        return result
     
     def get_all_families(self) -> List[Dict]:
-        """Retorna todas as famílias de produtos disponíveis"""
-        conn = self.get_connection()
-        cursor = conn.cursor()
-        
-        cursor.execute("""
-            SELECT pf.id, pf.name, pf.description, 
-                   COUNT(p.id) as product_count
-            FROM product_families pf
-            LEFT JOIN product_categories pc ON pf.id = pc.family_id
-            LEFT JOIN products p ON pc.id = p.category_id AND p.is_active = 1
-            GROUP BY pf.id, pf.name, pf.description
-            ORDER BY pf.display_order, pf.name
-        """)
-        
-        families = []
-        for row in cursor.fetchall():
-            family = dict(row)
-            families.append(family)
-        
-        conn.close()
-        return families
+        """Retorna todas as famílias de produtos disponíveis, com fallback para dados default"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT pf.id, pf.name, pf.description, 
+                       COUNT(p.id) as product_count
+                FROM product_families pf
+                LEFT JOIN product_categories pc ON pf.id = pc.family_id
+                LEFT JOIN products p ON pc.id = p.category_id AND p.is_active = 1
+                GROUP BY pf.id, pf.name, pf.description
+                ORDER BY pf.display_order, pf.name
+            """)
+            families = []
+            for row in cursor.fetchall():
+                family = dict(row)
+                families.append(family)
+            conn.close()
+            if families:
+                return families
+        except Exception as e:
+            print(f"[Fallback] Erro ao acessar BD: {e}")
+        # Fallback para dados default
+        result = []
+        for fam in product_families:
+            fam_copy = fam.copy()
+            fam_id = fam['id']
+            cat_ids = [c['id'] for c in product_categories if c['family_id'] == fam_id]
+            fam_copy['product_count'] = sum(1 for p in products if p.get('category_id') in cat_ids and p.get('is_active', 1))
+            result.append(fam_copy)
+        return result
+    def get_product_attributes(self, product_id: int) -> Dict[str, Any]:
+        """Obtém atributos de um produto, com fallback para dados default"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT at.name, at.data_type, at.unit,
+                       pa.value_numeric, pa.value_text, pa.value_boolean
+                FROM product_attributes pa
+                JOIN attribute_types at ON pa.attribute_type_id = at.id
+                WHERE pa.product_id = ?
+            """, (product_id,))
+            attributes = {}
+            for row in cursor.fetchall():
+                name = row['name']
+                if row['data_type'] == 'numeric':
+                    attributes[name] = {
+                        'value': row['value_numeric'],
+                        'unit': row['unit']
+                    }
+                elif row['data_type'] == 'boolean':
+                    attributes[name] = row['value_boolean']
+                else:
+                    attributes[name] = row['value_text']
+            conn.close()
+            if attributes:
+                return attributes
+        except Exception as e:
+            print(f"[Fallback] Erro ao acessar BD: {e}")
+        # Fallback para dados default
+        attrs = {}
+        for pa in globals().get('product_attributes', []):
+            if pa['product_id'] == product_id:
+                attr_type = next((a for a in globals().get('attribute_types', []) if a['id'] == pa['attribute_type_id']), None)
+                if not attr_type:
+                    continue
+                name = attr_type['name']
+                data_type = attr_type['data_type']
+                unit = attr_type.get('unit')
+                if data_type == 'numeric':
+                    attrs[name] = {'value': pa['value_numeric'], 'unit': unit}
+                elif data_type == 'boolean':
+                    attrs[name] = pa['value_boolean']
+                else:
+                    attrs[name] = pa['value_text']
+        return attrs
