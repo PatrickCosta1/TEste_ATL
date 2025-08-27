@@ -249,42 +249,101 @@ class DatabaseManager:
         conn.close()
     
     def get_products_by_conditions(self, conditions: Dict[str, Any]) -> List[Dict]:
-        """Encontra produtos que atendem às condições especificadas"""
-        conn = self.get_connection()
-        cursor = conn.cursor()
-        
-        # Query básica
-        query = """
-            SELECT DISTINCT p.*, pc.name as category_name, pf.name as family_name
-            FROM products p
-            JOIN product_categories pc ON p.category_id = pc.id
-            JOIN product_families pf ON pc.family_id = pf.id
-            JOIN selection_rules sr ON p.id = sr.product_id
-            WHERE p.is_active = 1 AND sr.is_active = 1
-        """
-        
-        conditions_sql = []
-        params = []
-        
-        for condition_type, value in conditions.items():
-            conditions_sql.append("(sr.condition_type = ? AND sr.condition_value = ?)")
-            params.extend([condition_type, str(value)])
-        
-        if conditions_sql:
-            query += " AND (" + " OR ".join(conditions_sql) + ")"
-        
-        query += " ORDER BY pf.display_order, pc.display_order, sr.priority DESC, p.name"
-        
-        cursor.execute(query, params)
-        
-        products = []
-        for row in cursor.fetchall():
-            product = dict(row)
-            product['attributes'] = self.get_product_attributes(product['id'])
-            products.append(product)
-        
-        conn.close()
-        return products
+        """Encontra produtos que atendem às condições especificadas, com fallback para dados default_data.py"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            # Query básica
+            query = """
+                SELECT DISTINCT p.*, pc.name as category_name, pf.name as family_name
+                FROM products p
+                JOIN product_categories pc ON p.category_id = pc.id
+                JOIN product_families pf ON pc.family_id = pf.id
+                JOIN selection_rules sr ON p.id = sr.product_id
+                WHERE p.is_active = 1 AND sr.is_active = 1
+            """
+            conditions_sql = []
+            params = []
+            for condition_type, value in conditions.items():
+                conditions_sql.append("(sr.condition_type = ? AND sr.condition_value = ?)")
+                params.extend([condition_type, str(value)])
+            if conditions_sql:
+                query += " AND (" + " OR ".join(conditions_sql) + ")"
+            query += " ORDER BY pf.display_order, pc.display_order, sr.priority DESC, p.name"
+            cursor.execute(query, params)
+            products_list = []
+            for row in cursor.fetchall():
+                product = dict(row)
+                product['attributes'] = self.get_product_attributes(product['id'])
+                products_list.append(product)
+            conn.close()
+            if products_list:
+                return products_list
+        except Exception as e:
+            print(f"[Fallback] Erro ao acessar BD: {e}")
+
+        # Fallback para dados default_data.py
+        try:
+            from default_data import products, product_categories, product_families, product_attributes, attribute_types
+        except ImportError:
+            products = globals().get('products', [])
+            product_categories = globals().get('product_categories', [])
+            product_families = globals().get('product_families', [])
+            product_attributes = globals().get('product_attributes', [])
+            attribute_types = globals().get('attribute_types', [])
+
+        # Fallback: retorna todos os produtos ativos que "batem" com as condições
+        result = []
+        for prod in products:
+            if not prod.get('is_active', 1):
+                continue
+            # Para cada condição, tentar filtrar por atributo ou campo
+            match = True
+            for cond_key, cond_val in conditions.items():
+                # Tenta por atributo
+                attrs = [pa for pa in product_attributes if pa['product_id'] == prod['id']]
+                attr_match = False
+                for pa in attrs:
+                    attr_type = next((a for a in attribute_types if a['id'] == pa['attribute_type_id']), None)
+                    if attr_type and attr_type['name'].lower() == cond_key.lower():
+                        # Comparação flexível (str)
+                        v = pa.get('value_text') or pa.get('value_numeric') or pa.get('value_boolean')
+                        if str(v).lower() == str(cond_val).lower():
+                            attr_match = True
+                            break
+                # Se não bateu por atributo, tenta por campo direto
+                if not attr_match:
+                    # Exemplo: location pode ser campo 'localizacao' ou similar
+                    if cond_key in prod and str(prod[cond_key]).lower() == str(cond_val).lower():
+                        attr_match = True
+                if not attr_match:
+                    match = False
+                    break
+            if match:
+                # Adiciona categoria/família/atributos
+                cat = next((c for c in product_categories if c['id'] == prod['category_id']), None)
+                fam = next((f for f in product_families if cat and f['id'] == cat['family_id']), None)
+                prod_copy = prod.copy()
+                prod_copy['category_name'] = cat['name'] if cat else None
+                prod_copy['family_name'] = fam['name'] if fam else None
+                # Monta atributos
+                prod_copy['attributes'] = {}
+                for pa in product_attributes:
+                    if pa['product_id'] == prod['id']:
+                        attr_type = next((a for a in attribute_types if a['id'] == pa['attribute_type_id']), None)
+                        if not attr_type:
+                            continue
+                        name = attr_type['name']
+                        data_type = attr_type['data_type']
+                        unit = attr_type.get('unit')
+                        if data_type == 'numeric':
+                            prod_copy['attributes'][name] = {'value': pa['value_numeric'], 'unit': unit}
+                        elif data_type == 'boolean':
+                            prod_copy['attributes'][name] = pa['value_boolean']
+                        else:
+                            prod_copy['attributes'][name] = pa['value_text']
+                result.append(prod_copy)
+        return result
     
     # ==========================================
     # GESTÃO DE ORÇAMENTOS
