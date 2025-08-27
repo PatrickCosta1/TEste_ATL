@@ -164,27 +164,40 @@ class DatabaseManager:
             return 'text'
     
     def get_products_by_category(self, category_id: int) -> List[Dict]:
-        """Obtém produtos por categoria"""
-        conn = self.get_connection()
-        cursor = conn.cursor()
-        
-        cursor.execute("""
-            SELECT p.*, pc.name as category_name, pf.name as family_name
-            FROM products p
-            JOIN product_categories pc ON p.category_id = pc.id
-            JOIN product_families pf ON pc.family_id = pf.id
-            WHERE p.category_id = ? AND p.is_active = 1
-            ORDER BY p.name
-        """, (category_id,))
-        
-        products = []
-        for row in cursor.fetchall():
-            product = dict(row)
-            product['attributes'] = self.get_product_attributes(product['id'])
-            products.append(product)
-        
-        conn.close()
-        return products
+        """Obtém produtos por categoria, com fallback para dados default"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT p.*, pc.name as category_name, pf.name as family_name
+                FROM products p
+                JOIN product_categories pc ON p.category_id = pc.id
+                JOIN product_families pf ON pc.family_id = pf.id
+                WHERE p.category_id = ? AND p.is_active = 1
+                ORDER BY p.name
+            """, (category_id,))
+            products_list = []
+            for row in cursor.fetchall():
+                product = dict(row)
+                product['attributes'] = self.get_product_attributes(product['id'])
+                products_list.append(product)
+            conn.close()
+            if products_list:
+                return products_list
+        except Exception as e:
+            print(f"[Fallback] Erro ao acessar BD: {e}")
+        # Fallback para dados default
+        cat = next((c for c in product_categories if c['id'] == category_id), None)
+        fam = next((f for f in product_families if cat and f['id'] == cat['family_id']), None)
+        result = []
+        for prod in products:
+            if prod.get('category_id') == category_id and prod.get('is_active', 1):
+                prod_copy = prod.copy()
+                prod_copy['category_name'] = cat['name'] if cat else None
+                prod_copy['family_name'] = fam['name'] if fam else None
+                prod_copy['attributes'] = self.get_product_attributes(prod['id'])
+                result.append(prod_copy)
+        return result
     
     def get_product_attributes(self, product_id: int) -> Dict[str, Any]:
         """Obtém atributos de um produto"""
