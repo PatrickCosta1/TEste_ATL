@@ -1347,6 +1347,35 @@ products = [{'base_price': 589,
   'unit': 'un',
   'updated_at': '2025-08-26 08:55:58'}]
 
+# Fallback: add valve products under category_id 3 (Válvulas Seletoras)
+products.append({'base_price': 99,
+  'brand': 'Generic',
+  'category_id': 3,
+  'code': 'VS-MANUAL-FB',
+  'cost_price': None,
+  'created_at': '2025-08-26 09:30:00',
+  'description': '',
+  'id': 100,
+  'is_active': 1,
+  'model': 'Manual',
+  'name': 'Válvula Selectora Manual',
+  'unit': 'un',
+  'updated_at': '2025-08-26 09:30:00'})
+
+products.append({'base_price': 999,
+  'brand': 'Aquark',
+  'category_id': 3,
+  'code': 'VS-IWASH-FB',
+  'cost_price': None,
+  'created_at': '2025-08-26 09:30:00',
+  'description': '',
+  'id': 101,
+  'is_active': 1,
+  'model': 'iWash',
+  'name': 'Válvula Selectora Automatica - iWash by aquark',
+  'unit': 'un',
+  'updated_at': '2025-08-26 09:30:00'})
+
 
 attribute_types = [{'data_type': 'numeric',
   'description': 'Capacidade de filtração em metros cúbicos por hora',
@@ -2429,6 +2458,12 @@ product_attributes = [{'attribute_type_id': 1, 'id': 1, 'product_id': 1, 'value_
   'value_boolean': None,
   'value_numeric': None,
   'value_text': 'Doseador Automático'}]
+
+# product_attributes for fallback valve products (ids 100 and 101)
+product_attributes.extend([
+  {'attribute_type_id': 10, 'id': 300, 'product_id': 100, 'value_boolean': None, 'value_numeric': None, 'value_text': 'Nao'},
+  {'attribute_type_id': 10, 'id': 301, 'product_id': 101, 'value_boolean': None, 'value_numeric': None, 'value_text': 'Sim'},
+])
 
 
 selection_rules = [{'condition_type': 'location',

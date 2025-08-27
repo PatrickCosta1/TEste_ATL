@@ -682,22 +682,24 @@ class AdvancedProductSelector:
     def _get_suitable_valves(self, has_domotics: str) -> List[Dict]:
         """Seleciona válvulas baseado na automação - LÓGICA CORRETA IMPLEMENTADA"""
         valves = []
+        # 1) Tentar obter category_id a partir do DB diretamente
         try:
             conn = self.db.get_connection()
             cursor = conn.cursor()
-            cursor.execute("""
-                SELECT p.*, pc.name as category_name
-                FROM products p
-                JOIN product_categories pc ON p.category_id = pc.id
-                WHERE pc.name = 'Válvulas Seletoras' AND p.is_active = 1
-            """)
-            for row in cursor.fetchall():
-                valve = dict(row)
-                valve['attributes'] = self.db.get_product_attributes(valve['id'])
-                valves.append(valve)
+            cursor.execute("SELECT id FROM product_categories WHERE name = ? LIMIT 1", ("Válvulas Seletoras",))
+            row = cursor.fetchone()
             conn.close()
+            if row:
+                cat_id = row['id']
+                valves = self.db.get_products_by_category(cat_id)
+            else:
+                valves = []
         except Exception as e:
-            print(f"[Fallback] Erro ao acessar BD para válvulas: {e}")
+            print(f"[Fallback] Erro ao buscar categoria de válvulas no BD: {e}")
+            valves = []
+
+        # 2) Se não encontrou no DB, usar fallback a partir de default_data.py
+        if not valves:
             try:
                 from default_data import products, product_categories
             except ImportError:
@@ -711,36 +713,48 @@ class AdvancedProductSelector:
                         prod_copy['category_name'] = 'Válvulas Seletoras'
                         prod_copy['attributes'] = self.db.get_product_attributes(prod['id'])
                         valves.append(prod_copy)
-        
+
         # Separar válvulas por tipo
-        manual_valves = [v for v in valves if 'Manual' in v['name']]
-        auto_valves = [v for v in valves if 'iWash' in v['name'] or 'Automática' in v['name']]
-        
+        manual_valves = [v for v in valves if 'manual' in v['name'].lower()]
+        auto_valves = [v for v in valves if 'iwash' in v['name'].lower() or 'automática' in v['name'].lower() or 'automatica' in v['name'].lower()]
+
         result = []
-        
+
         if has_domotics == 'true':
             # COM DOMÓTICA: Automática INCLUÍDA por padrão, Manual ALTERNATIVA
-            for valve in auto_valves:
-                valve['item_type'] = 'incluido'
-                valve['reasoning'] = 'Válvula automática para integração domótica'
-                result.append(valve)
-            
-            for valve in manual_valves:
-                valve['item_type'] = 'alternativo'
-                valve['reasoning'] = 'Alternativa manual'
-                result.append(valve)
+            if auto_valves:
+                for valve in auto_valves:
+                    valve['item_type'] = 'incluido'
+                    valve['reasoning'] = 'Válvula automática para integração domótica'
+                    result.append(valve)
+                for valve in manual_valves:
+                    valve['item_type'] = 'alternativo'
+                    valve['reasoning'] = 'Alternativa manual'
+                    result.append(valve)
+            else:
+                # fallback: se não houver automática, incluir manual como principal
+                for valve in manual_valves:
+                    valve['item_type'] = 'incluido'
+                    valve['reasoning'] = 'Válvula manual padrão (sem automática disponível)'
+                    result.append(valve)
         else:
             # SEM DOMÓTICA: Manual INCLUÍDA por padrão, Automática ALTERNATIVA
-            for valve in manual_valves:
-                valve['item_type'] = 'incluido'
-                valve['reasoning'] = 'Válvula manual padrão'
-                result.append(valve)
-            
-            for valve in auto_valves:
-                valve['item_type'] = 'alternativo'
-                valve['reasoning'] = 'Upgrade automático alternativo'
-                result.append(valve)
-        
+            if manual_valves:
+                for valve in manual_valves:
+                    valve['item_type'] = 'incluido'
+                    valve['reasoning'] = 'Válvula manual padrão'
+                    result.append(valve)
+                for valve in auto_valves:
+                    valve['item_type'] = 'alternativo'
+                    valve['reasoning'] = 'Upgrade automático alternativo'
+                    result.append(valve)
+            else:
+                # fallback: se não houver manual, incluir automática como principal
+                for valve in auto_valves:
+                    valve['item_type'] = 'incluido'
+                    valve['reasoning'] = 'Válvula automática (sem manual disponível)'
+                    result.append(valve)
+
         return result
     
     def _get_suitable_pumps(self, required_m3_h: float, power_type: str) -> List[Dict]:
