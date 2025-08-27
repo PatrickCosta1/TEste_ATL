@@ -47,7 +47,6 @@ class DatabaseManager:
         
         if not os.path.exists(self.db_path):
             self.create_database()
-            self.populate_initial_data()
     
     def create_database(self):
         """Cria a estrutura da base de dados"""
@@ -324,61 +323,12 @@ class DatabaseManager:
             
             conn.commit()
             return budget_id
-            
+
         except Exception as e:
             conn.rollback()
             raise e
         finally:
             conn.close()
-    
-    def populate_initial_data(self):
-        """Popula dados iniciais na base de dados"""
-        print("A carregar dados iniciais...")
-        
-        # Aqui você pode carregar dados de ficheiros CSV, JSON, etc.
-        # Exemplo: carregar produtos de filtração
-        self._load_filtration_products()
-        print("Dados iniciais carregados com sucesso!")
-    
-    def _load_filtration_products(self):
-        """Carrega produtos de filtração iniciais"""
-        # Filtros de areia
-        filters_sand = [
-            {
-                'code': 'FA-10', 'name': 'Filtro Areia 10 m³/h', 'price': 350.00,
-                'attributes': {'Capacidade': 10, 'Tipo de Filtro': 'areia', 'Localização': 'exterior'}
-            },
-            {
-                'code': 'FA-15', 'name': 'Filtro Areia 15 m³/h', 'price': 480.00,
-                'attributes': {'Capacidade': 15, 'Tipo de Filtro': 'areia', 'Localização': 'exterior'}
-            },
-            {
-                'code': 'FA-20', 'name': 'Filtro Areia 20 m³/h', 'price': 620.00,
-                'attributes': {'Capacidade': 20, 'Tipo de Filtro': 'areia', 'Localização': 'exterior'}
-            }
-        ]
-        
-        # Filtros de cartucho  
-        filters_cartridge = [
-            {
-                'code': 'FC-10', 'name': 'Filtro Cartucho 10 m³/h', 'price': 450.00,
-                'attributes': {'Capacidade': 10, 'Tipo de Filtro': 'cartucho', 'Localização': 'interior'}
-            },
-            {
-                'code': 'FC-15', 'name': 'Filtro Cartucho 15 m³/h', 'price': 650.00,
-                'attributes': {'Capacidade': 15, 'Tipo de Filtro': 'cartucho', 'Localização': 'interior'}
-            }
-        ]
-        
-        # Adicionar produtos (categoria 1 = Filtros de Areia, 2 = Filtros de Cartucho)
-        for filter_data in filters_sand:
-            product_id = self.add_product(1, **filter_data)
-            # Adicionar regras de seleção
-            self.add_selection_rule(product_id, 'location', 'exterior')
-        
-        for filter_data in filters_cartridge:
-            product_id = self.add_product(2, **filter_data)
-            self.add_selection_rule(product_id, 'location', 'interior')
     
     def get_product_by_id(self, product_id: str) -> Optional[Dict]:
         """Busca um produto específico pelo ID"""
