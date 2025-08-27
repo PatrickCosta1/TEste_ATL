@@ -299,36 +299,36 @@ class DatabaseManager:
         for prod in products:
             if not prod.get('is_active', 1):
                 continue
-            # Para cada condição, tentar filtrar por atributo ou campo
             match = True
             for cond_key, cond_val in conditions.items():
                 # Tenta por atributo
                 attrs = [pa for pa in product_attributes if pa['product_id'] == prod['id']]
+                attr_found = False
                 attr_match = False
                 for pa in attrs:
                     attr_type = next((a for a in attribute_types if a['id'] == pa['attribute_type_id']), None)
                     if attr_type and attr_type['name'].lower() == cond_key.lower():
-                        # Comparação flexível (str)
+                        attr_found = True
                         v = pa.get('value_text') or pa.get('value_numeric') or pa.get('value_boolean')
                         if str(v).lower() == str(cond_val).lower():
                             attr_match = True
                             break
                 # Se não bateu por atributo, tenta por campo direto
-                if not attr_match:
-                    # Exemplo: location pode ser campo 'localizacao' ou similar
-                    if cond_key in prod and str(prod[cond_key]).lower() == str(cond_val).lower():
-                        attr_match = True
-                if not attr_match:
+                if not attr_found:
+                    if cond_key in prod:
+                        attr_found = True
+                        if str(prod[cond_key]).lower() == str(cond_val).lower():
+                            attr_match = True
+                # Se a condição não existe como atributo/campo, NÃO elimina o produto
+                if attr_found and not attr_match:
                     match = False
                     break
             if match:
-                # Adiciona categoria/família/atributos
                 cat = next((c for c in product_categories if c['id'] == prod['category_id']), None)
                 fam = next((f for f in product_families if cat and f['id'] == cat['family_id']), None)
                 prod_copy = prod.copy()
                 prod_copy['category_name'] = cat['name'] if cat else None
                 prod_copy['family_name'] = fam['name'] if fam else None
-                # Monta atributos
                 prod_copy['attributes'] = {}
                 for pa in product_attributes:
                     if pa['product_id'] == prod['id']:
