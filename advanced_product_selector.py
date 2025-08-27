@@ -681,24 +681,36 @@ class AdvancedProductSelector:
     
     def _get_suitable_valves(self, has_domotics: str) -> List[Dict]:
         """Seleciona válvulas baseado na automação - LÓGICA CORRETA IMPLEMENTADA"""
-        # Obter todas as válvulas
-        conn = self.db.get_connection()
-        cursor = conn.cursor()
-        
-        cursor.execute("""
-            SELECT p.*, pc.name as category_name
-            FROM products p
-            JOIN product_categories pc ON p.category_id = pc.id
-            WHERE pc.name = 'Válvulas' AND p.is_active = 1
-        """)
-        
         valves = []
-        for row in cursor.fetchall():
-            valve = dict(row)
-            valve['attributes'] = self.db.get_product_attributes(valve['id'])
-            valves.append(valve)
-        
-        conn.close()
+        try:
+            conn = self.db.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT p.*, pc.name as category_name
+                FROM products p
+                JOIN product_categories pc ON p.category_id = pc.id
+                WHERE pc.name = 'Válvulas Seletoras' AND p.is_active = 1
+            """)
+            for row in cursor.fetchall():
+                valve = dict(row)
+                valve['attributes'] = self.db.get_product_attributes(valve['id'])
+                valves.append(valve)
+            conn.close()
+        except Exception as e:
+            print(f"[Fallback] Erro ao acessar BD para válvulas: {e}")
+            try:
+                from default_data import products, product_categories
+            except ImportError:
+                products = globals().get('products', [])
+                product_categories = globals().get('product_categories', [])
+            valvulas_cat = next((c for c in product_categories if c['name'] == 'Válvulas Seletoras'), None)
+            if valvulas_cat:
+                for prod in products:
+                    if prod.get('category_id') == valvulas_cat['id'] and prod.get('is_active', 1):
+                        prod_copy = prod.copy()
+                        prod_copy['category_name'] = 'Válvulas Seletoras'
+                        prod_copy['attributes'] = self.db.get_product_attributes(prod['id'])
+                        valves.append(prod_copy)
         
         # Separar válvulas por tipo
         manual_valves = [v for v in valves if 'Manual' in v['name']]
@@ -734,25 +746,37 @@ class AdvancedProductSelector:
     def _get_suitable_pumps(self, required_m3_h: float, power_type: str) -> List[Dict]:
         """Seleciona bombas baseado na capacidade e tipo de energia - COM VELOCIDADE VARIÁVEL"""
         
-        # Obter todas as bombas de filtração da categoria "Bombas" 
-        conn = self.db.get_connection()
-        cursor = conn.cursor()
-        
-        cursor.execute("""
-            SELECT p.*, pc.name as category_name
-            FROM products p
-            JOIN product_categories pc ON p.category_id = pc.id
-            WHERE pc.name = 'Bombas' AND p.is_active = 1
-            ORDER BY p.base_price
-        """)
-        
         pumps = []
-        for row in cursor.fetchall():
-            pump = dict(row)
-            pump['attributes'] = self.db.get_product_attributes(pump['id'])
-            pumps.append(pump)
-        
-        conn.close()
+        try:
+            conn = self.db.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT p.*, pc.name as category_name
+                FROM products p
+                JOIN product_categories pc ON p.category_id = pc.id
+                WHERE pc.name = 'Bomba de Filtração' AND p.is_active = 1
+                ORDER BY p.base_price
+            """)
+            for row in cursor.fetchall():
+                pump = dict(row)
+                pump['attributes'] = self.db.get_product_attributes(pump['id'])
+                pumps.append(pump)
+            conn.close()
+        except Exception as e:
+            print(f"[Fallback] Erro ao acessar BD para bombas: {e}")
+            try:
+                from default_data import products, product_categories
+            except ImportError:
+                products = globals().get('products', [])
+                product_categories = globals().get('product_categories', [])
+            bombas_cat = next((c for c in product_categories if c['name'] == 'Bomba de Filtração'), None)
+            if bombas_cat:
+                for prod in products:
+                    if prod.get('category_id') == bombas_cat['id'] and prod.get('is_active', 1):
+                        prod_copy = prod.copy()
+                        prod_copy['category_name'] = 'Bomba de Filtração'
+                        prod_copy['attributes'] = self.db.get_product_attributes(prod['id'])
+                        pumps.append(prod_copy)
         
         # Separar bombas por tipo
         standard_pumps = []
