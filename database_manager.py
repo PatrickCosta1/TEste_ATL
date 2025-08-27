@@ -456,7 +456,7 @@ class DatabaseManager:
             result.append(fam_copy)
         return result
     def get_product_attributes(self, product_id: int) -> Dict[str, Any]:
-        """Obtém atributos de um produto, com fallback para dados default"""
+        """Obtém atributos de um produto, com fallback para dados default_data.py"""
         try:
             conn = self.get_connection()
             cursor = conn.cursor()
@@ -485,10 +485,16 @@ class DatabaseManager:
         except Exception as e:
             print(f"[Fallback] Erro ao acessar BD: {e}")
         # Fallback para dados default
+        # Tenta importar se não estiver no escopo
+        try:
+            from default_data import product_attributes, attribute_types
+        except ImportError:
+            product_attributes = globals().get('product_attributes', [])
+            attribute_types = globals().get('attribute_types', [])
         attrs = {}
-        for pa in globals().get('product_attributes', []):
+        for pa in product_attributes:
             if pa['product_id'] == product_id:
-                attr_type = next((a for a in globals().get('attribute_types', []) if a['id'] == pa['attribute_type_id']), None)
+                attr_type = next((a for a in attribute_types if a['id'] == pa['attribute_type_id']), None)
                 if not attr_type:
                     continue
                 name = attr_type['name']
