@@ -1146,52 +1146,67 @@ class AdvancedProductSelector:
         
         return products
     
-    def _get_product_by_name_pattern(self, pattern: str) -> Dict:
-        """Busca produto por padrão no nome"""
-        conn = self.db.get_connection()
-        cursor = conn.cursor()
-        
-        # Tentar busca exata primeiro
-        cursor.execute("""
-            SELECT p.*, pc.name as category_name
-            FROM products p
-            JOIN product_categories pc ON p.category_id = pc.id
-            WHERE p.name = ? AND p.is_active = 1
-            LIMIT 1
-        """, (pattern,))
-        
-        result = cursor.fetchone()
-        
-        # Se não encontrar exato, tentar busca por padrão
-        if not result:
+    def _get_product_by_name_pattern(self, pattern: str) -> dict:
+        """Busca produto por padrão no nome, com fallback para dados Python se BD falhar"""
+        try:
+            conn = self.db.get_connection()
+            cursor = conn.cursor()
+            # Tentar busca exata primeiro
             cursor.execute("""
                 SELECT p.*, pc.name as category_name
                 FROM products p
                 JOIN product_categories pc ON p.category_id = pc.id
-                WHERE p.name LIKE ? AND p.is_active = 1
+                WHERE p.name = ? AND p.is_active = 1
                 LIMIT 1
-            """, (f"%{pattern}%",))
-            
+            """, (pattern,))
             result = cursor.fetchone()
-        
-        # Debug: mostrar produtos encontrados se não houver resultado
-        if not result:
-            print(f"⚠️  Produto não encontrado: '{pattern}'")
-            cursor.execute("""
-                SELECT p.name FROM products p WHERE p.is_active = 1 AND p.name LIKE ?
-                LIMIT 5
-            """, (f"%{pattern.split()[0]}%",))
-            similar = cursor.fetchall()
-            if similar:
-                print(f"   Produtos similares encontrados:")
-                for s in similar:
-                    print(f"   - {s[0]}")
-        
-        conn.close()
-        
-        if result:
-            product = dict(result)
-            product['attributes'] = self.db.get_product_attributes(product['id'])
-            return product
-        
+            # Se não encontrar exato, tentar busca por padrão
+            if not result:
+                cursor.execute("""
+                    SELECT p.*, pc.name as category_name
+                    FROM products p
+                    JOIN product_categories pc ON p.category_id = pc.id
+                    WHERE p.name LIKE ? AND p.is_active = 1
+                    LIMIT 1
+                """, (f"%{pattern}%",))
+                result = cursor.fetchone()
+            if result:
+                product = dict(result)
+                product['attributes'] = self.db.get_product_attributes(product['id'])
+                conn.close()
+                return product
+            conn.close()
+        except Exception as e:
+            print(f"[Fallback] Erro ao acessar BD: {e}")
+
+        # Fallback para dados Python
+        try:
+            from default_data import products, product_categories
+        except ImportError:
+            products = globals().get('products', [])
+            product_categories = globals().get('product_categories', [])
+
+        # Busca exata
+        for prod in products:
+            if prod.get('is_active', 1) and prod['name'] == pattern:
+                cat = next((c for c in product_categories if c['id'] == prod['category_id']), None)
+                prod_copy = prod.copy()
+                prod_copy['category_name'] = cat['name'] if cat else None
+                prod_copy['attributes'] = self.db.get_product_attributes(prod['id'])
+                return prod_copy
+        # Busca por padrão
+        for prod in products:
+            if prod.get('is_active', 1) and pattern.lower() in prod['name'].lower():
+                cat = next((c for c in product_categories if c['id'] == prod['category_id']), None)
+                prod_copy = prod.copy()
+                prod_copy['category_name'] = cat['name'] if cat else None
+                prod_copy['attributes'] = self.db.get_product_attributes(prod['id'])
+                return prod_copy
+        print(f"⚠️  Produto não encontrado: '{pattern}' (fallback)")
+        # Sugestão de similares
+        similar = [p['name'] for p in products if pattern.split()[0].lower() in p['name'].lower()][:5]
+        if similar:
+            print(f"   Produtos similares encontrados:")
+            for s in similar:
+                print(f"   - {s}")
         return None
