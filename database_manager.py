@@ -292,6 +292,8 @@ class DatabaseManager:
             product_attributes = globals().get('product_attributes', [])
             attribute_types = globals().get('attribute_types', [])
 
+        print(f"[DEBUG Render] Produtos carregados: {len(products)} | Categorias: {len(product_categories)} | Famílias: {len(product_families)} | Atributos: {len(product_attributes)} | Tipos de atributo: {len(attribute_types)}")
+
         # Fallback: retorna todos os produtos ativos que "batem" com as condições
         result = []
         for prod in products:
@@ -343,6 +345,7 @@ class DatabaseManager:
                         else:
                             prod_copy['attributes'][name] = pa['value_text']
                 result.append(prod_copy)
+        print(f"[DEBUG Render] Produtos retornados pelo fallback: {len(result)}")
         return result
     
     # ==========================================
