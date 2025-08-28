@@ -285,6 +285,9 @@ async function gerarPDF(orcamento) {
           } else if (item.tipo === 'Opcional') {
             precoUnit = `€${item.preco.toLocaleString('pt-PT', {minimumFractionDigits:2})}`;
             subtotal = 'Opcional';
+          } else if (item.tipo === 'Oferta' || item.tipo === 'oferta') {
+            precoUnit = item.preco !== undefined ? `€${item.preco.toLocaleString('pt-PT', {minimumFractionDigits:2})}` : '';
+            subtotal = 'Oferta';
           } else {
             precoUnit = item.preco !== undefined ? `€${item.preco.toLocaleString('pt-PT', {minimumFractionDigits:2})}` : '';
             subtotal = `€${item.subtotal.toLocaleString('pt-PT', {minimumFractionDigits:2})}`;
@@ -292,6 +295,7 @@ async function gerarPDF(orcamento) {
           
           // Acumula subtotal da categoria e total geral (apenas itens normais)
           if (item.tipo === 'Normal') subtotalCategoria += item.subtotal;
+          // Oferta não acumula (já tratada visualmente)
           
           // Produto (quebrado em linhas) com cores diferentes para cada tipo
           let produtoY = y;
@@ -592,6 +596,25 @@ async function exportBudgetToPDFTeste2() {
             tipo: 'Opcional',
             subtotal: 0, // Não conta no total
             isOptional: true,
+            productId: productId
+          });
+        }
+      });
+      
+      // Processar produtos marcados como Oferta (não contam para o total, devem aparecer como 'Oferta' no PDF)
+      Object.entries(products).forEach(([productId, product]) => {
+        if (product.item_type === 'oferta' || product.item_type === 'Oferta') {
+          console.log('DEBUG: Adicionando produto OFERTA:', product.name);
+          const cleanName = (product.name || '').replace(' (ALTERNATIVO)', '').replace(' (OPCIONAL)', '').replace(' (OFERTA)', '');
+          orcamentoTeste2.itens.push({
+            categoria: displayName,
+            nome: cleanName,
+            unidade: product.unit || 'un',
+            preco: product.price,
+            qtd: product.quantity || 0,
+            tipo: 'Oferta',
+            subtotal: 0, // Não conta no total
+            isOffer: true,
             productId: productId
           });
         }

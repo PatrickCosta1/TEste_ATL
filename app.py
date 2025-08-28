@@ -735,7 +735,13 @@ def get_current_answers():
                 'domotica': pool_info.get('domotica', 'nao'),
                 'localizacao': pool_info.get('localizacao', 'exterior'),
                 'luz': pool_info.get('luz', 'led'),
-                'tratamento_agua': pool_info.get('tratamento_agua', 'cloro_manual')
+                'tratamento_agua': pool_info.get('tratamento_agua', 'cloro_manual'),
+                'tipo_construcao': pool_info.get('tipo_construcao', 'nova'),
+                'cobertura': pool_info.get('cobertura', 'nao'),
+                'tipo_cobertura_laminas': pool_info.get('tipo_cobertura_laminas', ''),
+                'casa_maquinas_abaixo': pool_info.get('casa_maquinas_abaixo', 'nao'),
+                'casa_maquinas_desc': pool_info.get('casa_maquinas_desc', ''),
+                'tipo_luzes': pool_info.get('tipo_luzes', 'branco_frio')
             }
         
         return jsonify({
@@ -765,10 +771,10 @@ def toggle_optional():
     try:
         data = request.get_json() if request.is_json else request.form.to_dict()
         budget = session.get('current_budget', {})
-        
+
         product_id = data.get('product_id')
         include = data.get('include', True)
-        
+
         # Encontrar o produto em todas as famílias
         product_found = False
         for family_name, family_products in budget.get('families', {}).items():
@@ -778,7 +784,7 @@ def toggle_optional():
                 current_type = product.get('item_type')
                 is_toggleable = (current_type == 'opcional' or 
                                (current_type == 'incluido' and product.get('was_optional', False)))
-                
+
                 if is_toggleable or current_type == 'opcional':
                     if include and current_type == 'opcional':
                         # Quando incluir: produto vira "incluído" e quantidade = 1
@@ -798,7 +804,7 @@ def toggle_optional():
                         product['quantity'] = 0
                     product_found = True
                     break
-        
+
         if product_found:
             # Recalcular totais da família excluindo alternativos
             for family_name, family_products in budget['families'].items():
@@ -807,13 +813,13 @@ def toggle_optional():
                     for item in family_products.values() 
                     if item['quantity'] > 0 and item.get('item_type', 'incluido') in ['incluido', 'opcional']
                 )
-                
+
                 # Recalcular totais usando a nova função
                 calculate_and_update_totals(budget)
-            
+
             budget['total_price'] = sum(budget['family_totals'].values())
             session['current_budget'] = budget
-            
+
             return jsonify({
                 'success': True,
                 'new_total': budget['total_price']
@@ -823,12 +829,62 @@ def toggle_optional():
                 'success': False,
                 'error': 'Produto opcional não encontrado'
             }), 404
-            
     except Exception as e:
         return jsonify({
             'success': False,
             'error': str(e)
         }), 400
+
+
+@app.route('/update_project_configuration', methods=['POST'])
+def update_project_configuration():
+    """Recebe atualização da configuração do projeto a partir do modal e atualiza o orçamento na sessão"""
+    try:
+        data = request.get_json() if request.is_json else request.form.to_dict()
+        budget = session.get('current_budget', {})
+
+        if 'pool_info' not in budget:
+            budget['pool_info'] = {}
+        if 'answers' not in budget['pool_info']:
+            budget['pool_info']['answers'] = {}
+
+        answers = budget['pool_info']['answers']
+
+        # Campos esperados (converter tipos booleanos/numericos quando necessário)
+        fields = ['acesso','escavacao','forma','tipo_piscina','revestimento','domotica','localizacao','luz','tratamento_agua','tipo_construcao','cobertura','tipo_cobertura_laminas','casa_maquinas_abaixo']
+        for f in fields:
+            if f in data:
+                answers[f] = data.get(f)
+
+        # Medidas
+        dimensions = session.get('pool_dimensions', {})
+        try:
+            dimensions['comprimento'] = float(data.get('comprimento', dimensions.get('comprimento', 0)))
+            dimensions['largura'] = float(data.get('largura', dimensions.get('largura', 0)))
+            dimensions['prof_min'] = float(data.get('prof_min', dimensions.get('prof_min', 0)))
+            dimensions['prof_max'] = float(data.get('prof_max', dimensions.get('prof_max', 0)))
+        except Exception:
+            # keep existing if conversion fails
+            pass
+
+        # Salvar de volta
+        budget['pool_info']['answers'] = answers
+        budget['pool_info']['dimensions'] = dimensions
+        session['pool_dimensions'] = dimensions
+        session['current_budget'] = budget
+
+        # Recalcular orcamento se a função estiver disponível
+        try:
+            calculate_and_update_totals(budget)
+            session['current_budget'] = budget
+        except Exception:
+            pass
+
+        return jsonify({'success': True, 'message': 'Configuração atualizada'})
+    except Exception as e:
+        print(f"ERROR update_project_configuration: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+@app.route('/update_item_type', methods=['POST'])
 def update_item_type():
     """Alterar tipo do item (incluído/opcional/oferta)"""
     try:
@@ -848,8 +904,8 @@ def update_item_type():
             # Atualizar tipo do item
             budget['families'][family][item_id]['item_type'] = new_type
             
-            # Se mudou para opcional ou oferta, zerar quantidade
-            if new_type in ['opcional', 'oferta']:
+            # Se mudou para opcional, zerar quantidade; se for oferta, manter quantidade (não conta para totais)
+            if new_type == 'opcional':
                 budget['families'][family][item_id]['quantity'] = 0
             elif new_type == 'incluido' and budget['families'][family][item_id]['quantity'] == 0:
                 # Se mudou para incluído e estava zerado, colocar 1
@@ -914,10 +970,24 @@ def replace_product():
             if len(parts) == 2 and parts[1].isdigit():
                 real_new_id = parts[1]
         
-        # Buscar informações do novo produto
-        new_product = db_manager.get_product_by_id(real_new_id)
+        # Buscar informações do novo produto — FORÇAR uso do fallback default_data.py
+        try:
+            from default_data import products as fallback_products, product_categories
+        except Exception as ex:
+            return jsonify({'success': False, 'error': f'Fallback data not available: {ex}'})
+
+        new_product = next((p for p in fallback_products if str(p.get('id')) == str(real_new_id)), None)
         if not new_product:
-            return jsonify({'success': False, 'error': f'Produto não encontrado com ID {real_new_id}'})
+            return jsonify({'success': False, 'error': f'Produto não encontrado no fallback com ID {real_new_id}'})
+
+        # Enriquecer com nome de categoria (compatível com uso posterior)
+        try:
+            cat = next((c for c in product_categories if c.get('id') == new_product.get('category_id')), None)
+            new_product = dict(new_product)
+            new_product['category_name'] = cat.get('name') if cat else ''
+        except Exception:
+            new_product = dict(new_product)
+            new_product['category_name'] = ''
         
         # Obter orçamento atual da sessão
         current_budget = session.get('current_budget', {})
@@ -1012,16 +1082,111 @@ def get_alternatives(family_name, current_product_id):
         db_family_name = family_mapping.get(family_name, family_name)
         print(f"[ALT-DEBUG] Família mapeada: {family_name} -> {db_family_name}")
 
-        current_product = db_manager.get_product_by_id(real_product_id)
-        print(f"[ALT-DEBUG] Produto atual retornado: {current_product}")
+        # Forçar uso do fallback default_data.py como fonte única para alternativas
+        try:
+            from default_data import products as fallback_products, product_categories, product_families
+        except Exception as ex:
+            return jsonify({'success': False, 'error': f'Fallback data not available: {ex}'})
+
+        # Encontrar o produto atual no fallback — mas aceitar vários formatos de identificador
+        import unicodedata
+        def slugify(text: str) -> str:
+            if not text:
+                return ''
+            s = unicodedata.normalize('NFKD', str(text)).encode('ASCII', 'ignore').decode('ASCII')
+            s = ''.join(ch for ch in s if ch.isalnum() or ch.isspace() or ch == '_')
+            return s.strip().lower().replace(' ', '_')
+
+        current_product = None
+
+        # 1) Se o identificador contém dígitos no final, já tentámos com regex; buscar por id
+        if str(real_product_id).isdigit():
+            current_product = next((p for p in fallback_products if str(p.get('id')) == str(real_product_id)), None)
+
+        # 2) Se não encontrado, tentar resolver como chave presente no orçamento da sessão
         if not current_product:
-            print(f"[ALT-DEBUG] Produto não encontrado com ID {real_product_id}")
+            budget = session.get('current_budget', {})
+            if budget:
+                for fam_key, fam_products in (budget.get('families') or {}).items():
+                    if fam_products and str(current_product_id) in fam_products:
+                        prod_entry = fam_products.get(str(current_product_id))
+                        if prod_entry:
+                            pid = prod_entry.get('id') or prod_entry.get('product_id')
+                            if pid:
+                                current_product = next((p for p in fallback_products if str(p.get('id')) == str(pid)), None)
+                                if current_product:
+                                    print(f"[ALT-DEBUG] Resolved current_product_id '{current_product_id}' via session family '{fam_key}' -> id {pid}")
+                                    break
+
+        # 3) Se ainda não encontrou, tentar matchmaking por slug (nome, código, modelo)
+        if not current_product:
+            needle = slugify(real_product_id)
+            if needle:
+                # procurar por name/model/code que slugifique para o mesmo
+                for p in fallback_products:
+                    if slugify(p.get('name')) == needle or slugify(p.get('model')) == needle or slugify(p.get('code')) == needle:
+                        current_product = dict(p)
+                        print(f"[ALT-DEBUG] Resolved current_product_id '{current_product_id}' by slug match -> {p.get('id')}")
+                        break
+
+        print(f"[ALT-DEBUG] Produto atual (fallback) retornado: {current_product}")
+        if not current_product:
+            # Fornecer contexto de diagnóstico: possíveis chaves na família da sessão
+            poss = []
+            budget = session.get('current_budget', {})
+            if budget and budget.get('families'):
+                for fam_k, fam_p in budget.get('families').items():
+                    if isinstance(fam_p, dict):
+                        poss.extend(list(fam_p.keys())[:10])
+            print(f"[ALT-DEBUG] Produto não encontrado no fallback com ID '{real_product_id}'. Sample keys from session families: {poss}")
             return jsonify({'success': False, 'error': f'Produto não encontrado com ID {real_product_id}'})
 
-        all_products = db_manager.get_products_by_family(db_family_name)
-        print(f"[ALT-DEBUG] Produtos retornados por família ({db_family_name}): {len(all_products)}")
+        # Mapear família para nomes no fallback (preservar mapeamento anteriormente usado)
+        # db_family_name pode ser o nome exibido ou um slug; permitir ambos ao localizar a família
+        def fam_slug(s: str) -> str:
+            if not s:
+                return ''
+            import unicodedata
+            import re
+            t = unicodedata.normalize('NFKD', s).encode('ASCII', 'ignore').decode('ASCII').strip().lower()
+            t = re.sub(r'[^a-z0-9]+', '_', t).strip('_')
+            return t
+
+        fam = None
+        for f in product_families:
+            if f.get('name') == db_family_name or fam_slug(f.get('name', '')) == str(db_family_name):
+                fam = f
+                break
+        if fam:
+            fam_id = fam.get('id')
+            family_cat_ids = [c.get('id') for c in product_categories if c.get('family_id') == fam_id]
+            all_products = [dict(p) for p in fallback_products if p.get('category_id') in family_cat_ids and p.get('is_active', 1)]
+        else:
+            # fallback: buscar todos os produtos do fallback
+            all_products = [dict(p) for p in fallback_products if p.get('is_active', 1)]
+
+        print(f"[ALT-DEBUG] Produtos retornados por família (fallback {db_family_name}): {len(all_products)}")
         for p in all_products:
+            # tentar anexar category_name se possível
+            try:
+                cat = next((c for c in product_categories if c.get('id') == p.get('category_id')), None)
+                p['category_name'] = cat.get('name') if cat else ''
+            except Exception:
+                p['category_name'] = ''
             print(f"    - {p.get('name')} (ID: {p.get('id')}, categoria: {p.get('category_name')})")
+
+        # Garantir que current_product tem category_name (pode faltar dependendo de como foi resolvido)
+        try:
+            cur_cat = next((c for c in product_categories if c.get('id') == current_product.get('category_id')), None)
+            if isinstance(current_product, dict):
+                current_product['category_name'] = cur_cat.get('name') if cur_cat else current_product.get('category_name', '')
+            else:
+                # current_product pode ser um objeto não-dict em algumas resoluções; converter
+                current_product = dict(current_product)
+                current_product['category_name'] = cur_cat.get('name') if cur_cat else current_product.get('category_name', '')
+        except Exception:
+            current_product = dict(current_product)
+            current_product['category_name'] = current_product.get('category_name', '')
 
         import unicodedata
         def normalize(s):
@@ -1037,25 +1202,58 @@ def get_alternatives(family_name, current_product_id):
             print(f"    - {p.get('name')} (ID: {p.get('id')})")
 
         alternatives = []
-        if len(same_category_products) > 1:
-            for product in same_category_products:
-                try:
-                    prod_id = int(product['id'])
-                    real_id = int(real_product_id)
-                except Exception as e:
-                    print(f"[ALT-DEBUG] Erro ao converter IDs para int: {e}")
+        current_price = current_product.get('base_price', current_product.get('price', 0))
+
+        # Se houver mais de um produto na mesma categoria, priorizar essa lista.
+        candidates = same_category_products if len(same_category_products) > 1 else []
+
+        # Garantir que o produto atual não esteja entre os candidatos (comparar por id e por slug do nome)
+        try:
+            current_id_str = str(current_product.get('id') or '')
+            current_name_slug = slugify(current_product.get('name') or '')
+            filtered = []
+            for p in candidates:
+                pid = str(p.get('id') or '')
+                name_slug = slugify(p.get('name') or '')
+                if pid == current_id_str or (name_slug and name_slug == current_name_slug):
+                    # p represents the same product; skip
                     continue
-                if prod_id != real_id:
-                    alternatives.append({
-                        'id': product['id'],
-                        'name': product['name'],
-                        'price': product['base_price'],
-                        'description': product.get('description', ''),
-                        'attributes': product.get('attributes', {})
-                    })
-                    print(f"[ALT-DEBUG] Alternativa encontrada: {product['name']} (ID: {product['id']})")
-        else:
-            print("[ALT-DEBUG] Só existe um produto nesta categoria, nenhuma alternativa disponível.")
+                filtered.append(p)
+            candidates = filtered
+        except Exception:
+            pass
+
+        # Se não houver candidatos por categoria, fallback para todos os produtos da família (excluindo o atual)
+        if not candidates:
+            print("[ALT-DEBUG] Nenhum produto na mesma categoria; buscando por família como fallback.")
+            # Excluir explicitamente o produto atual também no fallback por família
+            current_id_str = str(current_product.get('id') or '')
+            current_name_slug = slugify(current_product.get('name') or '')
+            candidates = [p for p in all_products if str(p.get('id')) != current_id_str and slugify(p.get('name') or '') != current_name_slug]
+
+        # Calcular diferenças de preço e ordenar para oferecer alternativas mais próximas
+        scored = []
+        for product in candidates:
+            try:
+                pid = product.get('id')
+                price = product.get('base_price', product.get('price', 0)) or 0
+                diff = abs(price - (current_price or 0))
+                scored.append((diff, product))
+            except Exception as e:
+                print(f"[ALT-DEBUG] Erro ao pontuar produto: {e}")
+
+        scored.sort(key=lambda x: x[0])
+
+        # Limitar a um número razoável de alternativas
+        for diff, product in scored[:6]:
+            alternatives.append({
+                'id': product.get('id'),
+                'name': product.get('name'),
+                'price': product.get('base_price', product.get('price', 0)) or 0,
+                'description': product.get('description', ''),
+                'attributes': product.get('attributes', {})
+            })
+            print(f"[ALT-DEBUG] Alternativa proposta: {product.get('name')} (ID: {product.get('id')}) diff={diff}")
 
         print(f"[ALT-DEBUG] Total de alternativas encontradas: {len(alternatives)}")
 

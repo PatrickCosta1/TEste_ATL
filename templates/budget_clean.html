@@ -271,6 +271,33 @@
             box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
         }
 
+        /* Estilo melhorado para o botão 'Oferta' */
+        .btn-offer {
+            background: linear-gradient(135deg, #f97316, #f59e0b);
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+            box-shadow: 0 6px 18px rgba(245, 158, 11, 0.18);
+            font-size: 14px;
+        }
+        .btn-offer:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 12px 30px rgba(245, 158, 11, 0.24);
+        }
+        .btn-offer[disabled] {
+            opacity: 0.5;
+            cursor: default;
+            transform: none;
+            box-shadow: none;
+        }
+
         /* CSS Premium para Modal de Configuração */
         .edit-modal.premium {
             background: linear-gradient(145deg, #ffffff, #f8fafc);
@@ -766,45 +793,52 @@
         }
 
         .product-action-btn {
-            padding: 0.625rem 1rem;
+            padding: 0.6rem 0.95rem;
             border: none;
-            border-radius: 8px;
-            font-size: 0.875rem;
-            font-weight: 500;
+            border-radius: 10px;
+            font-size: 0.88rem;
+            font-weight: 700;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: transform 0.14s ease, box-shadow 0.14s ease, background 0.12s ease;
+            will-change: transform, box-shadow;
             text-transform: uppercase;
-            letter-spacing: 0.025em;
+            letter-spacing: 0.02em;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
         }
 
+        /* Primary action (Incluir) */
         .product-action-btn.include {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            background: linear-gradient(90deg,#06b58a,#05906b);
             color: white;
         }
 
         .product-action-btn.include:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+            transform: translateY(-2px) scale(1.01);
+            box-shadow: 0 8px 20px rgba(16,185,129,0.12);
         }
 
+        /* Optional */
         .product-action-btn.optional {
-            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            background: linear-gradient(90deg,#f59e0b,#d97706);
             color: white;
         }
 
         .product-action-btn.optional:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+            transform: translateY(-2px) scale(1.01);
+            box-shadow: 0 8px 20px rgba(245,158,11,0.12);
         }
 
+        /* Alternative */
         .product-action-btn.alternative {
-            background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);
+            background: linear-gradient(90deg,#2563eb,#1e40af);
             color: white;
         }
 
         .product-action-btn.alternative:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(8, 145, 178, 0.3);
+            transform: translateY(-2px) scale(1.01);
+            box-shadow: 0 8px 20px rgba(37,99,235,0.12);
         }
 
         .add-product-modal-footer {
@@ -818,35 +852,48 @@
         }
 
         .modal-back-btn, .modal-close-btn {
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 8px;
-            font-weight: 500;
+            padding: 0.65rem 1.05rem;
+            border: 1px solid rgba(15,23,42,0.06);
+            border-radius: 12px;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: transform .18s cubic-bezier(.2,.9,.3,1), box-shadow .18s ease, background .12s ease;
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            background: rgba(255,255,255,0.6);
+            backdrop-filter: blur(6px);
         }
 
         .modal-back-btn {
-            background: #6b7280;
-            color: white;
+            background: linear-gradient(90deg,#6b7280,#4b5563);
+            color: #fff;
+            box-shadow: 0 8px 20px rgba(75,85,99,0.06);
         }
 
         .modal-back-btn:hover {
-            background: #4b5563;
-            transform: translateY(-1px);
+            transform: translateY(-2px) scale(1.005);
+            box-shadow: 0 6px 16px rgba(75,85,99,0.08);
+            background: linear-gradient(90deg,#6f747a,#4b5563);
         }
 
         .modal-close-btn {
-            background: #dc2626;
-            color: white;
+            background: linear-gradient(90deg,#ef4444,#dc2626);
+            color: #fff;
+            box-shadow: 0 6px 14px rgba(220,38,38,0.06);
         }
 
         .modal-close-btn:hover {
-            background: #b91c1c;
-            transform: translateY(-1px);
+            transform: translateY(-2px) scale(1.005);
+            /* remove very dark shadow to keep it light and soft */
+            box-shadow: 0 6px 14px rgba(220,38,38,0.08);
+            background: linear-gradient(90deg,#f16b6b,#ef6262);
+        }
+
+        .modal-back-btn:focus, .modal-close-btn:focus {
+            outline: none;
+            box-shadow: 0 0 0 6px rgba(11,102,204,0.08);
+            transform: translateY(-2px);
         }
 
         /* More specific rule to ensure footer modal buttons keep their intended style
@@ -857,13 +904,13 @@
             align-items: center;
             justify-content: center;
             gap: 0.5rem;
-            padding: 0.6rem 1.05rem;
-            border-radius: 10px;
+            padding: 0.65rem 1.1rem;
+            border-radius: 12px;
             font-weight: 600;
             cursor: pointer;
-            box-shadow: 0 6px 18px rgba(15,23,42,0.06);
+            box-shadow: 0 8px 22px rgba(15,23,42,0.06);
             border: 1px solid rgba(0,0,0,0.03);
-            transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+            transition: transform .16s cubic-bezier(.2,.9,.3,1), box-shadow .16s ease, background .12s ease;
         }
 
         /* Position adjustments: back button left, close button right, both a bit higher */
@@ -1314,7 +1361,7 @@
                                     </div>
                                     <div class="ai-item">
                                         <span class="label">Tratamento da Água</span>
-                                        <span class="value value-treatment">
+                                        <span class="value value-treatment ai-item" style="padding: 3px 8px; border-radius:4px;border-left:3px solid blue;background:rgba(0, 123, 255, 0.1);">
                                             {% set tratamento = budget.pool_info.get('answers', {}).get('tratamento_agua', budget.pool_info.get('tratamento_agua', 'cloro_manual')) %}
                                             {% if tratamento == 'cloro_manual' %}Cloro Manual
                                             {% elif tratamento == 'cloro_automatico' %}Cloro Automático
@@ -1327,14 +1374,14 @@
                                     </div>
                                     <div class="ai-item">
                                         <span class="label">Tipo de Construção</span>
-                                        <span class="value value-construction">
+                                        <span class="value value-construction" style="padding: 3px 8px; border-radius:4px;border-left:3px solid orange;background:rgba(216, 95, 15, 0.1);">
                                             {% set tipo_construcao = budget.pool_info.get('answers', {}).get('tipo_construcao', budget.pool_info.get('tipo_construcao', 'nova')) %}
                                             {{ 'Nova' if tipo_construcao == 'nova' else 'Remodelação' }}
                                         </span>
                                     </div>
                                     <div class="ai-item">
-                                        <span class="label">Cobertura</span>
-                                        <span class="value value-coverage">
+                                        <span class="label" >Cobertura</span>
+                                        <span class="value value-coverage" style="padding: 3px 8px; border-radius:4px;border-left:3px solid rgba(12, 181, 223, 1);background:rgba(12, 181, 223, 0.25);">
                                             {% set cobertura = budget.pool_info.get('answers', {}).get('cobertura', budget.pool_info.get('cobertura', 'nao')) %}
                                             {% if cobertura == 'laminas' %}Cobertura de Lâminas
                                             {% elif cobertura == 'bolhas' %}Cobertura de Bolhas
@@ -1348,6 +1395,31 @@
                                                 {% elif tipo_laminas == 'fora_praia' %} (Fora da Praia)
                                                 {% elif tipo_laminas == 'elevada' %} (Elevada)
                                                 {% endif %}
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                    <div class="ai-item">
+                                        <span class="label">Casa das Máquinas</span>
+                                        <span class="value value-machine-room {{ 'ai-active' if budget.pool_info.get('answers', {}).get('casa_maquinas_abaixo', budget.pool_info.get('casa_maquinas_abaixo', 'nao')) == 'sim' else 'ai-inactive' }}" style="padding: 3px 8px; border-radius:4px;border-left:3px solid rgba(191, 223, 12, 1);background:rgba(183, 207, 46, 0.25);">
+                                            {% if budget.pool_info.get('answers', {}).get('casa_maquinas_abaixo', budget.pool_info.get('casa_maquinas_abaixo', 'nao')) == 'sim' %}
+                                                Abaixo do nível da água
+                                            {% else %}
+                                                Acima do nível da água
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                    <div class="ai-item">
+                                        <span class="label">Observações Casa das Máquinas</span>
+                                        <span class="value value-machine-desc" style="margin-left:5px; padding: 3px 8px; border-radius:4px;border-left:3px solid rgba(214, 27, 205, 1);background:rgba(214, 27, 205, 0.1);">{{ budget.pool_info.get('answers', {}).get('casa_maquinas_desc', budget.pool_info.get('casa_maquinas_desc', '')) }}</span>
+                                    </div>
+                                    <div class="ai-item">
+                                        <span class="label">Tipo de Luzes</span>
+                                        <span class="value value-light-type" style="padding: 3px 8px; border-radius:4px;border-left:3px solid rgba(149, 40, 238, 1);background:rgba(149, 40, 238, 0.1);">
+                                            {% set tipo_luzes = budget.pool_info.get('answers', {}).get('tipo_luzes', budget.pool_info.get('tipo_luzes', 'branco_frio')) %}
+                                            {% if tipo_luzes == 'branco_frio' %}Branco Frio
+                                            {% elif tipo_luzes == 'branco_adaptavel' %}Branco Adaptável
+                                            {% elif tipo_luzes == 'rgb' %}RGB
+                                            {% else %}{{ tipo_luzes }}
                                             {% endif %}
                                         </span>
                                     </div>
@@ -1511,7 +1583,7 @@
             {# Check if this family has any displayable products #}
             {% set displayable_products = [] %}
             {% for product_id, product in family_products.items() %}
-                {% if product.quantity > 0 or product.item_type == 'alternativo' or product.item_type == 'opcional' %}
+                {% if product.quantity > 0 or product.item_type == 'alternativo' or product.item_type == 'opcional' or product.item_type == 'oferta' %}
                     {% set _ = displayable_products.append(product) %}
                 {% endif %}
             {% endfor %}
@@ -1545,65 +1617,50 @@
                     {% set included_products = [] %}
                     {% set alternative_products = [] %}
                     {% set optional_products = [] %}
+                    {% set offer_products = [] %}
                     {% for product_id, product in family_products.items() %}
-                        {% if product.quantity > 0 or product.item_type == 'alternativo' or product.item_type == 'opcional' %}
+                        {% if product.quantity > 0 or product.item_type == 'alternativo' or product.item_type == 'opcional' or product.item_type == 'oferta' %}
                             {% if product.item_type == 'incluido' %}
                                 {% set _ = included_products.append((product_id, product)) %}
                             {% elif product.item_type == 'alternativo' %}
                                 {% set _ = alternative_products.append((product_id, product)) %}
+                            {% elif product.item_type == 'opcional' %}
+                                {% set _ = optional_products.append((product_id, product)) %}
+                            {% elif product.item_type == 'oferta' %}
+                                {% set _ = offer_products.append((product_id, product)) %}
                             {% else %}
                                 {% set _ = optional_products.append((product_id, product)) %}
                             {% endif %}
                         {% endif %}
                     {% endfor %}
-                    
-                    {# Criar lista organizada com alternativos agrupados após seus principais #}
+                    {# Criar lista organizada preservando a ordem original e inserindo alternativos após o principal #}
                     {% set organized_products = [] %}
-                    {% set appended_alts = [] %} {# track alternative ids already appended to avoid duplicates #}
-                    
-                    {# Primeiro, adicionar produtos incluídos com seus alternativos #}
-                    {% for product_id, product in included_products %}
-                        {% set _ = organized_products.append((product_id, product)) %}
-                        {# Adicionar alternativos deste produto logo em seguida
-                           Compatibilidade: 'alternative_to' pode ser a chave completa (ex: 'pump_01_13')
-                           ou apenas o id numérico ('13'). Normalizar ambos os casos. #}
-                        {% for alt_id, alt_product in alternative_products %}
-                            {% set alt_target = alt_product.get('alternative_to') %}
-                            {% set prod_real_id = product.get('id') %}
-                            {% if alt_target == product_id or (alt_target is not none and (alt_target|string) == (prod_real_id|string)) %}
-                                {% if alt_id not in appended_alts %}
-                                    {% set _ = organized_products.append((alt_id, alt_product)) %}
-                                    {% set _ = appended_alts.append(alt_id) %}
-                                {% endif %}
-                            {% endif %}
-                        {% endfor %}
-                    {% endfor %}
-                    
-                    {# Adicionar alternativos órfãos (sem produto principal definido) - tratar tanto chaves completas quanto ids numéricos #}
-                    {% for alt_id, alt_product in alternative_products %}
-                        {% set alt_target = alt_product.get('alternative_to') %}
-                        {% if alt_id not in appended_alts %}
-                            {% if not alt_target %}
-                                {% set _ = organized_products.append((alt_id, alt_product)) %}
-                                {% set _ = appended_alts.append(alt_id) %}
-                            {% else %}
-                                {% set matched = false %}
-                                {% for existing_id, existing_prod in family_products.items() %}
-                                    {% if alt_target == existing_id or (existing_prod.get('id') is not none and (alt_target|string) == (existing_prod.get('id')|string)) %}
-                                        {% set matched = true %}
+                    {% set appended_alts = [] %}
+                    {% for product_id, product in family_products.items() %}
+                        {% if product.quantity > 0 or product.item_type == 'alternativo' or product.item_type == 'opcional' or product.item_type == 'oferta' %}
+                            {% if product.item_type == 'incluido' %}
+                                {% set _ = organized_products.append((product_id, product)) %}
+                                {# anexar alternativos relacionados imediatamente após o principal #}
+                                {% for alt_id, alt_product in alternative_products %}
+                                    {% set alt_target = alt_product.get('alternative_to') %}
+                                    {% set prod_real_id = product.get('id') %}
+                                    {% if alt_target == product_id or (alt_target is not none and (alt_target|string) == (prod_real_id|string)) %}
+                                        {% if alt_id not in appended_alts %}
+                                            {% set _ = organized_products.append((alt_id, alt_product)) %}
+                                            {% set _ = appended_alts.append(alt_id) %}
+                                        {% endif %}
                                     {% endif %}
                                 {% endfor %}
-                                {% if not matched %}
-                                    {% set _ = organized_products.append((alt_id, alt_product)) %}
-                                    {% set _ = appended_alts.append(alt_id) %}
+                            {% elif product.item_type == 'alternativo' %}
+                                {% if product_id not in appended_alts %}
+                                    {% set _ = organized_products.append((product_id, product)) %}
+                                    {% set _ = appended_alts.append(product_id) %}
                                 {% endif %}
+                            {% else %}
+                                {# opcionais e ofertas mantêm a posição em que aparecem no dicionário #}
+                                {% set _ = organized_products.append((product_id, product)) %}
                             {% endif %}
                         {% endif %}
-                    {% endfor %}
-                    
-                    {# Finalmente, adicionar produtos opcionais #}
-                    {% for product_id, product in optional_products %}
-                        {% set _ = organized_products.append((product_id, product)) %}
                     {% endfor %}
                     
                     {% for product_id, product in organized_products %}
@@ -1643,6 +1700,9 @@
                                            onchange="updateProductQuantity('{{ product_id }}', this.value)" min="1">
                                     <button class="qty-btn-compact" onclick="changeQuantity('{{ product_id }}', 1)">+</button>
                                 </div>
+                                <button class="btn-offer" title="Marcar como Oferta" onclick="setOffer('{{ family_name }}','{{ product_id }}')">
+                                    <i class="fas fa-gift"></i>
+                                </button>
                                 <button class="btn-remove-product" onclick="removeProduct('{{ product_id }}', '{{ family_name }}')">
                                     <i class="fas fa-trash-alt"></i>
                                 </button>
@@ -1708,6 +1768,23 @@
                                         id="toggle_{{ product_id }}" 
                                         onclick="toggleOptional('{{ product_id }}')">
                                     Remover
+                                </button>
+                                <button class="btn-remove-product" onclick="removeProduct('{{ product_id }}', '{{ family_name }}')">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            {% endif %}
+                            {% if product.item_type == 'oferta' %}
+                                <span class="price-total-compact offer-price">{{ "%.2f"|format(product.price * product.quantity) }}€</span>
+                                <div class="qty-controls-compact">
+                                    <button class="qty-btn-compact" onclick="changeQuantity('{{ product_id }}', -1)">-</button>
+                                    <input type="number" class="qty-input-compact" 
+                                           id="qty_{{ product_id }}" 
+                                           value="{{ product.quantity }}" 
+                                           onchange="updateProductQuantity('{{ product_id }}', this.value)" min="1">
+                                    <button class="qty-btn-compact" onclick="changeQuantity('{{ product_id }}', 1)">+</button>
+                                </div>
+                                <button class="btn-unset-offer" title="Reverter Oferta" onclick="unsetOffer('{{ family_name }}','{{ product_id }}')">
+                                    <i class="fas fa-undo"></i>
                                 </button>
                                 <button class="btn-remove-product" onclick="removeProduct('{{ product_id }}', '{{ family_name }}')">
                                     <i class="fas fa-trash-alt"></i>
@@ -1971,6 +2048,22 @@
             border: 1px solid var(--border-light);
             border-radius: var(--radius-lg);
             transition: all var(--transition-base);
+        }
+
+        /* Oferta styling */
+        .product-row-compact-detailed.offer, .product-row-compact-detailed .offer-price {
+            background: linear-gradient(90deg, rgba(251,211,141,0.12), rgba(254,243,199,0.03));
+        }
+
+        .item-badge.offer {
+            display: inline-block;
+            background: linear-gradient(90deg,#f59e0b,#d97706);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            margin-left: 8px;
         }
         
         .product-item.included {
@@ -2883,7 +2976,7 @@
         }
         
         .qty-input-compact {
-            width: 40px !important;
+            width: 45px !important;
             text-align: center;
             border: 2px solid #e2e8f0;
             border-radius: 8px;
@@ -5497,6 +5590,48 @@
                 modal.remove();
             }
         }
+
+        // Marcar produto como Oferta (não conta para o total)
+        function setOffer(familyName, productId) {
+            if (!confirm('Marcar este produto como Oferta? Ele não contará para o total.')) return;
+            fetch('/update_item_type', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ family: familyName, item_id: productId, item_type: 'oferta' })
+            }).then(res => res.json()).then(data => {
+                if (data.success) {
+                    const info = document.createElement('div');
+                    info.style.cssText = 'position:fixed;top:20px;right:20px;background:linear-gradient(135deg,#f59e0b,#d97706);padding:12px 18px;color:white;border-radius:8px;z-index:1001;font-weight:700;';
+                    info.innerText = 'Produto marcado como Oferta';
+                    document.body.appendChild(info);
+                    setTimeout(() => info.remove(), 2500);
+                    setTimeout(() => location.reload(), 900);
+                } else {
+                    alert('Falha ao marcar como Oferta: ' + (data.error || 'erro desconhecido'));
+                }
+            }).catch(err => { console.error(err); alert('Erro ao comunicar com o servidor'); });
+        }
+
+        // Reverter oferta (voltar para 'incluido')
+        function unsetOffer(familyName, productId) {
+            if (!confirm('Reverter esta Oferta e voltar a incluir o produto no total?')) return;
+            fetch('/update_item_type', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ family: familyName, item_id: productId, item_type: 'incluido' })
+            }).then(res => res.json()).then(data => {
+                if (data.success) {
+                    const info = document.createElement('div');
+                    info.style.cssText = 'position:fixed;top:20px;right:20px;background:linear-gradient(135deg,#10b981,#059669);padding:12px 18px;color:white;border-radius:8px;z-index:1001;font-weight:700;';
+                    info.innerText = 'Oferta revertida — produto incluído novamente';
+                    document.body.appendChild(info);
+                    setTimeout(() => info.remove(), 2500);
+                    setTimeout(() => location.reload(), 900);
+                } else {
+                    alert('Falha ao reverter Oferta: ' + (data.error || 'erro desconhecido'));
+                }
+            }).catch(err => { console.error(err); alert('Erro ao comunicar com o servidor'); });
+        }
         
         document.addEventListener('DOMContentLoaded', function() {
             // Animações de entrada sequencial
@@ -5608,23 +5743,47 @@
                     justify-content: space-between !important;
                     align-items: center !important;
                     padding: 1rem 1.5rem !important;
+                    gap: 8px !important;
                 }
+
+                /* Back button: redesigned to match Close (symmetry and polish) */
                 #addProductModal .add-product-modal-footer .modal-back-btn {
                     margin: 0 12px 0 0 !important;
-                    background: linear-gradient(90deg,#6b7280,#4b5563) !important;
+                    padding: 0.62rem 1.05rem !important;
+                    border-radius: 12px !important;
+                    background: linear-gradient(90deg,#556070,#3f4952) !important;
                     color: #fff !important;
-                    box-shadow: 0 8px 20px rgba(75,85,99,0.08) !important;
-                    border: 1px solid rgba(0,0,0,0.04) !important;
+                    box-shadow: 0 10px 26px rgba(46,60,73,0.07) !important;
+                    border: 1px solid rgba(0,0,0,0.06) !important;
+                    display: inline-flex !important;
+                    align-items: center !important;
+                    gap: 0.5rem !important;
+                    font-weight: 700 !important;
                 }
+
+                #addProductModal .add-product-modal-footer .modal-back-btn:hover {
+                    transform: translateY(-6px) scale(1.02) !important;
+                    box-shadow: 0 18px 38px rgba(46,60,73,0.14) !important;
+                    background: linear-gradient(90deg,#717986,#3f4952) !important;
+                }
+
+                #addProductModal .add-product-modal-footer .modal-back-btn:focus {
+                    outline: none !important;
+                    box-shadow: 0 0 0 6px rgba(59,130,246,0.08) !important;
+                }
+
+                /* Close button (keeps previous polished look) */
                 #addProductModal .add-product-modal-footer .modal-close-btn {
                     margin-left: auto !important;
-                    padding: 0.6rem 1.1rem !important;
-                    border-radius: 10px !important;
+                    padding: 0.62rem 1.05rem !important;
+                    border-radius: 12px !important;
                     background: linear-gradient(90deg,#ef4444,#dc2626) !important;
                     color: #fff !important;
-                    box-shadow: 0 8px 20px rgba(220,38,38,0.08) !important;
+                    box-shadow: 0 10px 26px rgba(220,38,38,0.07) !important;
                     z-index: 60 !important;
+                    font-weight: 700 !important;
                 }
+
                 #addProductModal .add-product-modal-footer .modal-close-btn:hover {
                     transform: translateY(-6px) scale(1.02) !important;
                     box-shadow: 0 18px 44px rgba(220,38,38,0.22) !important;
@@ -5633,6 +5792,27 @@
                 `;
                 document.head.appendChild(modalStyle);
             }
+
+            // Small CSS tweaks for compact family cards (no index/sidebar in family chooser)
+            (function injectExtra(){
+                const extraId = 'addProductModalExtraStyles';
+                if (document.getElementById(extraId)) return;
+                const s = document.createElement('style'); s.id = extraId; s.innerHTML = `
+                /* Layout for family chooser */
+                #addProductModal .add-product-layout { display:block; }
+                #addProductModal .family-cards-area { overflow:auto; max-height:420px; }
+                #addProductModal .family-grid.compact { display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:12px; }
+                #addProductModal .family-card-modal.compact { display:flex; gap:12px; align-items:center; padding:12px; border-radius:12px; background:white; border:1px solid #eef2f7; cursor:pointer; transition:all .15s ease; box-shadow:0 6px 20px rgba(15,23,42,0.04); }
+                #addProductModal .family-card-modal.compact .family-icon { width:44px; height:44px; border-radius:10px; background:linear-gradient(135deg,#eef2ff,#f0f9ff); display:flex; align-items:center; justify-content:center; color:#2563eb; font-size:1.15rem; }
+                #addProductModal .family-card-modal.compact .family-meta { display:flex; flex-direction:column; }
+                #addProductModal .family-card-modal.compact .family-title { font-weight:700; color:#0f172a; }
+                #addProductModal .family-card-modal.compact .family-count { font-size:0.85rem; color:#6b7280; }
+                #addProductModal .family-card-modal.compact:hover { transform:translateY(-6px); box-shadow: 0 18px 36px rgba(15,23,42,0.08); border-color:#dbeafe; }
+                @media (max-width: 820px) {
+                    #addProductModal .family-grid.compact { grid-template-columns: repeat(2, 1fr); }
+                }
+                `; document.head.appendChild(s);
+            })();
 
             // Ícones para famílias
             const familyIcons = {
@@ -5675,24 +5855,28 @@
                         </h3>
                     </div>
                     <div class="add-product-modal-body">
-                        <div id="familySelection">
-                            <p style="color: #64748b; margin-bottom: 0.5rem;">Selecione a família do produto:</p>
-                                <div class="family-grid">
-                                ${uniqueFamilies.map(family => {
-                                    const displayName = family.name || '';
-                                    const slug = family.name_slug || displayName.normalize('NFKD').replace(/\p{Diacritic}/gu, '').replace(/[^a-zA-Z0-9]+/g, '_').toLowerCase();
-                                    const icon = familyIcons[displayName] || 'fa-box';
-                                    const count = family.product_count || 0;
-                                    return `
-                                    <div class="family-card-modal" onclick="showFamilyProducts('${slug}')">
-                                        <div class="family-icon">
-                                            <i class="fas ${icon}"></i>
+                        <div class="add-product-layout">
+                            <section class="family-cards-area" id="familyCardsArea">
+                                <p style="color: #64748b; margin-bottom: 0.5rem;">Selecione a família do produto:</p>
+                                <div class="family-grid compact">
+                                    ${uniqueFamilies.map(family => {
+                                        const displayName = family.name || '';
+                                        const slug = family.name_slug || displayName.normalize('NFKD').replace(/\p{Diacritic}/gu, '').replace(/[^a-zA-Z0-9]+/g, '_').toLowerCase();
+                                        const icon = familyIcons[displayName] || 'fa-box';
+                                        const count = family.product_count || 0;
+                                        return `
+                                        <div class="family-card-modal compact" id="fam_${slug}" onclick="showFamilyProducts('${slug}')">
+                                            <div class="family-icon">
+                                                <i class="fas ${icon}"></i>
+                                            </div>
+                                            <div class="family-meta">
+                                                <div class="family-title">${displayName}</div>
+                                                <div class="family-count">${count}</div>
+                                            </div>
                                         </div>
-                                        <div class="family-title">${displayName}</div>
-                                        <div class="family-count">${count} produtos</div>
-                                    </div>
-                                `}).join('')}
-                            </div>
+                                    `}).join('')}
+                                </div>
+                            </section>
                         </div>
                         <div id="productSelection" style="display: none;">
                             <!-- Produtos serão carregados aqui -->
@@ -5700,13 +5884,13 @@
                     </div>
                     <div class="add-product-modal-footer">
                         <div id="modalBackButton" style="display: none;">
-                            <button class="modal-back-btn" onclick="backToFamilies()" style="padding:0.6rem 1.1rem;border-radius:10px;background:linear-gradient(90deg,#6b7280,#4b5563);color:#fff;border:1px solid rgba(0,0,0,0.04);box-shadow:0 8px 20px rgba(75,85,99,0.08);">
+                            <button class="modal-back-btn" onclick="backToFamilies()">
                                 <i class="fas fa-arrow-left"></i>
                                 Voltar às Famílias
                             </button>
                         </div>
                         <div>
-                            <button class="modal-close-btn" onclick="closeAddProductModal()" style="padding:0.6rem 1.1rem;border-radius:10px;background:linear-gradient(90deg,#ef4444,#dc2626);color:#fff;border:1px solid rgba(0,0,0,0.04);box-shadow:0 8px 20px rgba(220,38,38,0.08);">
+                            <button class="modal-close-btn" onclick="closeAddProductModal()">
                                 <i class="fas fa-times"></i>
                                 Fechar
                             </button>
@@ -5716,11 +5900,68 @@
             `;
 
             document.body.appendChild(modal);
+            // Pre-fill new fields based on existing displayed values or defaults
+            try {
+                const answersMap = {};
+                // attempt to read from the dashboard values if available
+                answersMap.tratamento_agua = document.querySelector('.value-treatment') ? document.querySelector('.value-treatment').textContent.trim().toLowerCase().replace(/\s+/g,'_') : null;
+                answersMap.tipo_construcao = document.querySelector('.value-construction') ? (document.querySelector('.value-construction').textContent.trim().toLowerCase().includes('remodel') ? 'remodelacao' : 'nova') : null;
+                answersMap.cobertura = document.querySelector('.value-coverage') ? document.querySelector('.value-coverage').textContent.trim().toLowerCase() : null;
+                answersMap.casa_maquinas_abaixo = document.querySelector('.value-machine-room') ? (document.querySelector('.value-machine-room').textContent.includes('Abaixo') ? 'sim' : 'nao') : null;
+                answersMap.casa_maquinas_desc = document.querySelector('.value-machine-desc') ? document.querySelector('.value-machine-desc').textContent.trim() : null;
+                answersMap.tipo_luzes = document.querySelector('.value-light-type') ? document.querySelector('.value-light-type').textContent.trim().toLowerCase().replace(/\s+/g,'_') : null;
+
+                if (answersMap.tratamento_agua && document.getElementById('edit-treatment')) document.getElementById('edit-treatment').value = answersMap.tratamento_agua;
+                if (answersMap.tipo_construcao && document.getElementById('edit-construction')) document.getElementById('edit-construction').value = answersMap.tipo_construcao;
+                if (answersMap.cobertura && document.getElementById('edit-coverage')) document.getElementById('edit-coverage').value = answersMap.cobertura;
+                if (answersMap.casa_maquinas_abaixo && document.getElementById('edit-machine-room')) document.getElementById('edit-machine-room').value = answersMap.casa_maquinas_abaixo;
+                if (answersMap.casa_maquinas_desc && document.getElementById('edit-machine-desc')) document.getElementById('edit-machine-desc').value = answersMap.casa_maquinas_desc;
+                if (answersMap.tipo_luzes && document.getElementById('edit-light-type')) {
+                    const t = answersMap.tipo_luzes;
+                    if (t.includes('rgb')) document.getElementById('edit-light-type').value = 'rgb';
+                    else if (t.includes('adapt')) document.getElementById('edit-light-type').value = 'branco_adaptavel';
+                    else document.getElementById('edit-light-type').value = 'branco_frio';
+                }
+
+                // handle coverage laminas visibility
+                const coverageSelect = document.getElementById('edit-coverage');
+                const laminasGroup = document.getElementById('edit-coverage-laminas-group');
+                if (coverageSelect && laminasGroup) {
+                    function updateLaminasVisibility() {
+                        if (coverageSelect.value === 'laminas') laminasGroup.style.display = 'block';
+                        else laminasGroup.style.display = 'none';
+                    }
+                    coverageSelect.addEventListener('change', updateLaminasVisibility);
+                    updateLaminasVisibility();
+                }
+            } catch (err) {
+                console.warn('Pre-fill modal fields failed', err);
+            }
             
             // Animação de entrada
             setTimeout(() => {
                 modal.classList.add('show');
             }, 10);
+
+            // Wire index clicks to smooth-scroll to category cards
+            try {
+                setTimeout(()=>{
+                    const indexLinks = modal.querySelectorAll('.index-link');
+                    indexLinks.forEach(link => {
+                        link.addEventListener('click', (ev)=>{
+                            ev.preventDefault();
+                            const target = link.dataset.target;
+                            const el = document.getElementById('fam_' + target);
+                            if (el) {
+                                el.scrollIntoView({behavior: 'smooth', block: 'center'});
+                                // highlight briefly
+                                el.classList.add('highlight');
+                                setTimeout(()=> el.classList.remove('highlight'), 1200);
+                            }
+                        });
+                    });
+                }, 50);
+            } catch(e) { console.warn('index wiring failed', e); }
 
             // Fechar ao clicar fora do modal
             modal.addEventListener('click', (e) => {
@@ -5747,48 +5988,145 @@
         }
 
         function displayFamilyProducts(familyName, products) {
-            const familyDiv = document.getElementById('familySelection');
-            const productDiv = document.getElementById('productSelection');
-            const backButton = document.getElementById('modalBackButton');
-            
-            familyDiv.style.display = 'none';
+            // Use modal-scoped selectors; fall back to global IDs if modal absent
+            const modal = document.getElementById('addProductModal');
+            const familyDiv = modal ? modal.querySelector('#familyCardsArea') : document.getElementById('familySelection');
+            const productDiv = modal ? modal.querySelector('#productSelection') : document.getElementById('productSelection');
+            const backButton = modal ? modal.querySelector('#modalBackButton') : document.getElementById('modalBackButton');
+
+            if (!productDiv) {
+                console.error('displayFamilyProducts: product container not found (productSelection)');
+                return;
+            }
+
+            if (familyDiv && familyDiv.style) familyDiv.style.display = 'none';
             productDiv.style.display = 'block';
-            backButton.style.display = 'block';
-            
+            if (backButton && backButton.style) backButton.style.display = 'block';
+
+            // Inject product-modal specific styles once
+            (function injectProductStyles(){
+                const id = 'productModalStyles';
+                if (document.getElementById(id)) return;
+                const st = document.createElement('style'); st.id = id; st.innerHTML = `
+                /* Modern compact product modal styles */
+                .product-modal-wrap { display:flex; gap:18px; align-items:flex-start; }
+                .product-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:14px; width:100%; }
+                .product-card { background:linear-gradient(180deg,#ffffff,#fbfdff); border:1px solid #e6eef8; border-radius:12px; padding:12px; box-shadow:0 10px 30px rgba(15,23,42,0.06); display:flex; flex-direction:column; gap:10px; transition:transform .16s cubic-bezier(.2,.9,.3,1), box-shadow .16s; }
+                .product-card:hover { transform:translateY(-6px); box-shadow:0 22px 42px rgba(15,23,42,0.12); }
+                .product-card .pc-top { display:flex; align-items:flex-start; gap:12px; }
+                .product-thumb { width:56px; height:56px; flex:0 0 56px; border-radius:10px; background:linear-gradient(135deg,#eef6ff,#f0fbff); display:flex; align-items:center; justify-content:center; color:#0b66c2; font-size:1.05rem; font-weight:800; }
+                .product-meta { display:flex; flex-direction:column; gap:2px; }
+                .product-title { font-weight:800; color:#0f172a; font-size:0.98rem; line-height:1.1; }
+                .product-cat { font-size:0.78rem; color:#6b7280; }
+                .product-desc { font-size:0.86rem; color:#475569; min-height:44px; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+                .product-footer { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+                .product-price { font-weight:900; color:#0b76d6; background:rgba(11,118,214,0.06); padding:6px 10px; border-radius:8px; }
+                .product-actions { display:flex; gap:8px; }
+                .product-action-btn { padding:6px 10px; border-radius:8px; border:0; cursor:pointer; font-weight:700; font-size:0.85rem; display:inline-flex; align-items:center; gap:8px; transition: transform 0.16s cubic-bezier(.2,.9,.3,1), box-shadow 0.16s ease, background 0.12s ease; will-change: transform, box-shadow; }
+                .product-action-btn i { font-size:0.9rem; }
+                .product-action-btn.include { background:linear-gradient(90deg,#06b58a,#05906b); color:white; }
+                .product-action-btn.include:hover { transform: translateY(-4px) scale(1.03); box-shadow: 0 14px 38px rgba(16, 185, 129, 0.18); }
+                .product-action-btn.optional { background:linear-gradient(90deg,#f59e0b,#d97706); color:white; }
+                .product-action-btn.optional:hover { transform: translateY(-4px) scale(1.03); box-shadow: 0 14px 38px rgba(245, 158, 11, 0.18); }
+                .product-action-btn.alternative { background:linear-gradient(90deg,#2563eb,#1e40af); color:white; }
+                .product-action-btn.alternative:hover { transform: translateY(-4px) scale(1.03); box-shadow: 0 14px 38px rgba(37, 99, 235, 0.18); }
+
+                /* Right-side sticky index inside products modal */
+                .products-index { width:150px; position:sticky; top:18px; align-self:flex-start; background:linear-gradient(180deg,#ffffff,#fbfdff); border:1px solid #eef6ff; padding:12px; border-radius:12px; height:calc(100% - 24px); overflow:auto; box-shadow:0 6px 18px rgba(15,23,42,0.04); }
+                .products-index .idx-title { font-weight:800; color:#0f172a; margin-bottom:8px; font-size:0.95rem; }
+                .products-index .idx-link { display:block; padding:8px 10px; color:#334155; text-decoration:none; border-radius:999px; font-weight:700; margin-bottom:8px; background:transparent; transition:all .14s ease; font-size:0.88rem; }
+                .products-index .idx-link:hover { background:#eef7ff; color:#0b66c2; transform:translateX(6px); }
+                .products-index .idx-link.active { background:#e6f0ff; color:#0b66c2; box-shadow:inset 0 1px 0 rgba(255,255,255,0.6); }
+
+                @media (max-width:920px){ .product-modal-wrap{ flex-direction:column-reverse; } .products-index{ width:100%; position:relative; order:2; } }
+                `; document.head.appendChild(st);
+            })();
+
+            // Group products by category to build index
+            const grouped = {};
+            products.forEach(p => {
+                const cat = p.category_name || 'Outros';
+                if (!grouped[cat]) grouped[cat] = [];
+                grouped[cat].push(p);
+            });
+
+            // Build HTML
+            const categories = Object.keys(grouped);
             productDiv.innerHTML = `
                 <h4 style="margin: 0 0 1rem 0; color: #1a202c; display: flex; align-items: center; gap: 0.5rem;">
-                    <i class="fas fa-box"></i>
+                    <i class="fas fa-box-open"></i>
                     Produtos - ${familyName}
                 </h4>
-                <div class="product-list-modal">
-                    ${products.map(product => `
-                        <div class="product-item-modal">
-                            <div class="product-info-modal">
-                                <div class="product-details-modal">
-                                    <div class="product-name-modal">${product.name}</div>
-                                    <div class="product-description-modal">
-                                        ${product.description || 'Sem descrição disponível'}
-                                    </div>
-                                    <div class="product-price-modal">
-                                        ${product.base_price.toFixed(2)}€
+                <div class="product-modal-wrap">
+                    <div class="product-grid-area" style="flex:1;">
+                        <div class="product-grid" id="productGrid">
+                            ${categories.map(cat => {
+                                return `
+                                <div class="product-category-block" id="cat_${cat.replace(/[^a-z0-9]+/gi, '_')}">
+                                    <div style="margin:10px 0 6px 0; font-weight:800; color:#0f172a;">${cat}</div>
+                                    <div class="product-category-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:10px;">
+                                        ${grouped[cat].map(p => `
+                                            <div class="product-card">
+                                                <div class="pc-top">
+                                                    <div class="product-thumb"><i class="fas fa-box"></i></div>
+                                                    <div>
+                                                        <div class="product-title">${p.name}</div>
+                                                        <div class="product-cat">${p.family_name || ''}</div>
+                                                    </div>
+                                                </div>
+                                                <div class="product-desc">${p.description || ''}</div>
+                                                <div class="product-footer">
+                                                    <div class="product-price">${(p.base_price || 0).toFixed(2)}€</div>
+                                                    <div class="product-actions">
+                                                        <button class="product-action-btn include" onclick="addProductToQuote(${p.id}, 'incluido')">Incluir</button>
+                                                        <button class="product-action-btn optional" onclick="addProductToQuote(${p.id}, 'opcional')">Opcional</button>
+                                                        <button class="product-action-btn alternative" onclick="showAlternativeSelection(${p.id})">Alternativo</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        `).join('')}
                                     </div>
                                 </div>
-                                <div class="product-actions-modal">
-                                    <button class="product-action-btn include" onclick="addProductToQuote(${product.id}, 'incluido')">
-                                        Incluir
-                                    </button>
-                                    <button class="product-action-btn optional" onclick="addProductToQuote(${product.id}, 'opcional')">
-                                        Opcional
-                                    </button>
-                                    <button class="product-action-btn alternative" onclick="showAlternativeSelection(${product.id})">
-                                        Alternativo
-                                    </button>
-                                </div>
-                            </div>
+                                `;
+                            }).join('')}
                         </div>
-                    `).join('')}
+                    </div>
+                    <aside class="products-index" id="productsIndex">
+                        <div class="idx-title">Categorias</div>
+                        ${categories.map(cat => `<a class="idx-link" href="#cat_${cat.replace(/[^a-z0-9]+/gi, '_')}" data-target="cat_${cat.replace(/[^a-z0-9]+/gi, '_')}">${cat}</a>`).join('')}
+                    </aside>
                 </div>
             `;
+
+            // Wire index clicks to smooth-scroll to category blocks and mark active
+            setTimeout(()=>{
+                const links = productDiv.querySelectorAll('.idx-link');
+                links.forEach(l => {
+                    l.addEventListener('click', ev => {
+                        ev.preventDefault();
+                        links.forEach(x=>x.classList.remove('active'));
+                        l.classList.add('active');
+                        const tgt = l.dataset.target;
+                        const el = document.getElementById(tgt);
+                        if (el) el.scrollIntoView({behavior:'smooth', block:'start'});
+                    });
+                });
+
+                // Add a simple scroll-spy to highlight index based on nearest category
+                const categoryEls = Array.from(productDiv.querySelectorAll('.product-category-block'));
+                if (categoryEls.length > 0) {
+                    const idxLinks = Array.from(productDiv.querySelectorAll('.idx-link'));
+                    const observer = new IntersectionObserver((entries)=>{
+                        entries.forEach(ent=>{
+                            if (ent.isIntersecting) {
+                                const id = ent.target.id;
+                                idxLinks.forEach(l => l.classList.toggle('active', l.dataset.target === id));
+                            }
+                        });
+                    }, { root: productDiv, rootMargin: '-40% 0px -40% 0px', threshold: 0.01 });
+                    categoryEls.forEach(el => observer.observe(el));
+                }
+            }, 60);
         }
 
         function backToFamilies() {
@@ -6852,6 +7190,62 @@
                                 <option value="trifasica" ${currentPower === 'trifasica' ? 'selected' : ''}>Trifásica</option>
                             </select>
                         </div>
+                        <div class="form-group">
+                            <label>Tratamento da Água</label>
+                            <select id="edit-treatment">
+                                <option value="cloro_manual">Cloro Manual</option>
+                                <option value="cloro_automatico">Cloro Automático</option>
+                                <option value="clorador_salino">Clorador Salino</option>
+                                <option value="clorador_salino_ph">Clorador Salino + pH</option>
+                                <option value="clorador_salino_ph_uv">Clorador Salino + pH + UV</option>
+                                <option value="nao">Não Incluído</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Tipo de Construção</label>
+                            <select id="edit-construction">
+                                <option value="nova">Construção Nova</option>
+                                <option value="remodelacao">Remodelação</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Cobertura</label>
+                            <select id="edit-coverage">
+                                <option value="nao">Sem Cobertura</option>
+                                <option value="laminas">Cobertura de Lâminas</option>
+                                <option value="bolhas">Cobertura de Bolhas</option>
+                                <option value="barras">Cobertura de Barras</option>
+                                <option value="lona">Cobertura de Lona</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="edit-coverage-laminas-group" style="display:none;">
+                            <label>Tipo de Cobertura de Lâminas</label>
+                            <select id="edit-coverage-laminas">
+                                <option value="">-- Selecionar --</option>
+                                <option value="submersa_praia">Submersa na Praia</option>
+                                <option value="fora_praia">Fora da Praia</option>
+                                <option value="elevada">Elevada</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Casa das Máquinas abaixo do nível da água?</label>
+                            <select id="edit-machine-room">
+                                <option value="nao">Não</option>
+                                <option value="sim">Sim</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Observações sobre a casa das máquinas</label>
+                            <textarea id="edit-machine-desc" rows="2" style="width:100%;padding:8px;border:2px solid #e5e7eb;border-radius:6px;"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Tipo de Luzes</label>
+                            <select id="edit-light-type">
+                                <option value="branco_frio">Branco Frio</option>
+                                <option value="branco_adaptavel">Branco Adaptável</option>
+                                <option value="rgb">RGB</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="edit-modal-footer">
                         <button onclick="closeModal()" class="btn btn-secondary">Cancelar</button>
@@ -6872,6 +7266,14 @@
             const location = document.getElementById('edit-location').value;
             const domotics = document.getElementById('edit-domotics').value;
             const power = document.getElementById('edit-power').value;
+            // Novos campos
+            const treatment = document.getElementById('edit-treatment') ? document.getElementById('edit-treatment').value : 'cloro_manual';
+            const construction = document.getElementById('edit-construction') ? document.getElementById('edit-construction').value : 'nova';
+            const coverage = document.getElementById('edit-coverage') ? document.getElementById('edit-coverage').value : 'nao';
+            const coverage_laminas = document.getElementById('edit-coverage-laminas') ? document.getElementById('edit-coverage-laminas').value : '';
+            const machine_room = document.getElementById('edit-machine-room') ? document.getElementById('edit-machine-room').value : 'nao';
+            const machine_desc = document.getElementById('edit-machine-desc') ? document.getElementById('edit-machine-desc').value : '';
+            const light_type = document.getElementById('edit-light-type') ? document.getElementById('edit-light-type').value : 'branco_frio';
             
             // Coletar também as medidas atuais da piscina
             const dimensionsEl = document.querySelector('.pool-dimensions, .value-dimensions');
@@ -6901,7 +7303,14 @@
                     escavacao: excavation,
                     localizacao: location,
                     domotica: domotics,
-                    luz: power
+                    luz: power,
+                    tratamento_agua: treatment,
+                    tipo_construcao: construction,
+                    cobertura: coverage,
+                    tipo_cobertura_laminas: coverage_laminas,
+                    casa_maquinas_abaixo: machine_room,
+                    casa_maquinas_desc: machine_desc,
+                    tipo_luzes: light_type
                 }
             };
             
