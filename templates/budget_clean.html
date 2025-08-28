@@ -1583,7 +1583,7 @@
             {# Check if this family has any displayable products #}
             {% set displayable_products = [] %}
             {% for product_id, product in family_products.items() %}
-                {% if product.quantity > 0 or product.item_type == 'alternativo' or product.item_type == 'opcional' or product.item_type == 'oferta' %}
+                {% if product.quantity > 0 or product.item_type == 'alternativo' or product.item_type == 'opcional' %}
                     {% set _ = displayable_products.append(product) %}
                 {% endif %}
             {% endfor %}
@@ -1617,50 +1617,65 @@
                     {% set included_products = [] %}
                     {% set alternative_products = [] %}
                     {% set optional_products = [] %}
-                    {% set offer_products = [] %}
                     {% for product_id, product in family_products.items() %}
-                        {% if product.quantity > 0 or product.item_type == 'alternativo' or product.item_type == 'opcional' or product.item_type == 'oferta' %}
+                        {% if product.quantity > 0 or product.item_type == 'alternativo' or product.item_type == 'opcional' %}
                             {% if product.item_type == 'incluido' %}
                                 {% set _ = included_products.append((product_id, product)) %}
                             {% elif product.item_type == 'alternativo' %}
                                 {% set _ = alternative_products.append((product_id, product)) %}
-                            {% elif product.item_type == 'opcional' %}
-                                {% set _ = optional_products.append((product_id, product)) %}
-                            {% elif product.item_type == 'oferta' %}
-                                {% set _ = offer_products.append((product_id, product)) %}
                             {% else %}
                                 {% set _ = optional_products.append((product_id, product)) %}
                             {% endif %}
                         {% endif %}
                     {% endfor %}
-                    {# Criar lista organizada preservando a ordem original e inserindo alternativos após o principal #}
+                    
+                    {# Criar lista organizada com alternativos agrupados após seus principais #}
                     {% set organized_products = [] %}
-                    {% set appended_alts = [] %}
-                    {% for product_id, product in family_products.items() %}
-                        {% if product.quantity > 0 or product.item_type == 'alternativo' or product.item_type == 'opcional' or product.item_type == 'oferta' %}
-                            {% if product.item_type == 'incluido' %}
-                                {% set _ = organized_products.append((product_id, product)) %}
-                                {# anexar alternativos relacionados imediatamente após o principal #}
-                                {% for alt_id, alt_product in alternative_products %}
-                                    {% set alt_target = alt_product.get('alternative_to') %}
-                                    {% set prod_real_id = product.get('id') %}
-                                    {% if alt_target == product_id or (alt_target is not none and (alt_target|string) == (prod_real_id|string)) %}
-                                        {% if alt_id not in appended_alts %}
-                                            {% set _ = organized_products.append((alt_id, alt_product)) %}
-                                            {% set _ = appended_alts.append(alt_id) %}
-                                        {% endif %}
+                    {% set appended_alts = [] %} {# track alternative ids already appended to avoid duplicates #}
+                    
+                    {# Primeiro, adicionar produtos incluídos com seus alternativos #}
+                    {% for product_id, product in included_products %}
+                        {% set _ = organized_products.append((product_id, product)) %}
+                        {# Adicionar alternativos deste produto logo em seguida
+                           Compatibilidade: 'alternative_to' pode ser a chave completa (ex: 'pump_01_13')
+                           ou apenas o id numérico ('13'). Normalizar ambos os casos. #}
+                        {% for alt_id, alt_product in alternative_products %}
+                            {% set alt_target = alt_product.get('alternative_to') %}
+                            {% set prod_real_id = product.get('id') %}
+                            {% if alt_target == product_id or (alt_target is not none and (alt_target|string) == (prod_real_id|string)) %}
+                                {% if alt_id not in appended_alts %}
+                                    {% set _ = organized_products.append((alt_id, alt_product)) %}
+                                    {% set _ = appended_alts.append(alt_id) %}
+                                {% endif %}
+                            {% endif %}
+                        {% endfor %}
+                    {% endfor %}
+                    
+                    {# Adicionar alternativos órfãos (sem produto principal definido) - tratar tanto chaves completas quanto ids numéricos #}
+                    {% for alt_id, alt_product in alternative_products %}
+                        {% set alt_target = alt_product.get('alternative_to') %}
+                        {% if alt_id not in appended_alts %}
+                            {% if not alt_target %}
+                                {% set _ = organized_products.append((alt_id, alt_product)) %}
+                                {% set _ = appended_alts.append(alt_id) %}
+                            {% else %}
+                                {% set matched = false %}
+                                {% for existing_id, existing_prod in family_products.items() %}
+                                    {% if alt_target == existing_id or (existing_prod.get('id') is not none and (alt_target|string) == (existing_prod.get('id')|string)) %}
+                                        {% set matched = true %}
                                     {% endif %}
                                 {% endfor %}
-                            {% elif product.item_type == 'alternativo' %}
-                                {% if product_id not in appended_alts %}
-                                    {% set _ = organized_products.append((product_id, product)) %}
-                                    {% set _ = appended_alts.append(product_id) %}
+                                {% if not matched %}
+                                    {% set _ = organized_products.append((alt_id, alt_product)) %}
+                                    {% set _ = appended_alts.append(alt_id) %}
                                 {% endif %}
-                            {% else %}
-                                {# opcionais e ofertas mantêm a posição em que aparecem no dicionário #}
-                                {% set _ = organized_products.append((product_id, product)) %}
                             {% endif %}
                         {% endif %}
+                    {% endfor %}
+                    
+                    {# Finalmente, adicionar produtos opcionais #}
+                    {% for product_id, product in optional_products %}
+                        {% set _ = organized_products.append((product_id, product)) %}
                     {% endfor %}
                     
                     {% for product_id, product in organized_products %}
@@ -1768,23 +1783,6 @@
                                         id="toggle_{{ product_id }}" 
                                         onclick="toggleOptional('{{ product_id }}')">
                                     Remover
-                                </button>
-                                <button class="btn-remove-product" onclick="removeProduct('{{ product_id }}', '{{ family_name }}')">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            {% endif %}
-                            {% if product.item_type == 'oferta' %}
-                                <span class="price-total-compact offer-price">{{ "%.2f"|format(product.price * product.quantity) }}€</span>
-                                <div class="qty-controls-compact">
-                                    <button class="qty-btn-compact" onclick="changeQuantity('{{ product_id }}', -1)">-</button>
-                                    <input type="number" class="qty-input-compact" 
-                                           id="qty_{{ product_id }}" 
-                                           value="{{ product.quantity }}" 
-                                           onchange="updateProductQuantity('{{ product_id }}', this.value)" min="1">
-                                    <button class="qty-btn-compact" onclick="changeQuantity('{{ product_id }}', 1)">+</button>
-                                </div>
-                                <button class="btn-unset-offer" title="Reverter Oferta" onclick="unsetOffer('{{ family_name }}','{{ product_id }}')">
-                                    <i class="fas fa-undo"></i>
                                 </button>
                                 <button class="btn-remove-product" onclick="removeProduct('{{ product_id }}', '{{ family_name }}')">
                                     <i class="fas fa-trash-alt"></i>
@@ -2048,22 +2046,6 @@
             border: 1px solid var(--border-light);
             border-radius: var(--radius-lg);
             transition: all var(--transition-base);
-        }
-
-        /* Oferta styling */
-        .product-row-compact-detailed.offer, .product-row-compact-detailed .offer-price {
-            background: linear-gradient(90deg, rgba(251,211,141,0.12), rgba(254,243,199,0.03));
-        }
-
-        .item-badge.offer {
-            display: inline-block;
-            background: linear-gradient(90deg,#f59e0b,#d97706);
-            color: white;
-            padding: 4px 8px;
-            border-radius: 999px;
-            font-size: 0.75rem;
-            font-weight: 700;
-            margin-left: 8px;
         }
         
         .product-item.included {
@@ -5608,27 +5590,6 @@
                     setTimeout(() => location.reload(), 900);
                 } else {
                     alert('Falha ao marcar como Oferta: ' + (data.error || 'erro desconhecido'));
-                }
-            }).catch(err => { console.error(err); alert('Erro ao comunicar com o servidor'); });
-        }
-
-        // Reverter oferta (voltar para 'incluido')
-        function unsetOffer(familyName, productId) {
-            if (!confirm('Reverter esta Oferta e voltar a incluir o produto no total?')) return;
-            fetch('/update_item_type', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ family: familyName, item_id: productId, item_type: 'incluido' })
-            }).then(res => res.json()).then(data => {
-                if (data.success) {
-                    const info = document.createElement('div');
-                    info.style.cssText = 'position:fixed;top:20px;right:20px;background:linear-gradient(135deg,#10b981,#059669);padding:12px 18px;color:white;border-radius:8px;z-index:1001;font-weight:700;';
-                    info.innerText = 'Oferta revertida — produto incluído novamente';
-                    document.body.appendChild(info);
-                    setTimeout(() => info.remove(), 2500);
-                    setTimeout(() => location.reload(), 900);
-                } else {
-                    alert('Falha ao reverter Oferta: ' + (data.error || 'erro desconhecido'));
                 }
             }).catch(err => { console.error(err); alert('Erro ao comunicar com o servidor'); });
         }

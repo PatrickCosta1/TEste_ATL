@@ -904,8 +904,8 @@ def update_item_type():
             # Atualizar tipo do item
             budget['families'][family][item_id]['item_type'] = new_type
             
-            # Se mudou para opcional, zerar quantidade; se for oferta, manter quantidade (não conta para totais)
-            if new_type == 'opcional':
+            # Se mudou para opcional ou oferta, zerar quantidade
+            if new_type in ['opcional', 'oferta']:
                 budget['families'][family][item_id]['quantity'] = 0
             elif new_type == 'incluido' and budget['families'][family][item_id]['quantity'] == 0:
                 # Se mudou para incluído e estava zerado, colocar 1
