@@ -421,7 +421,16 @@ class AdvancedProductSelector:
             return new_dict
 
         families_ordered = {}
-        # Para cada família, aplicar swap se necessário
+        # Map internal family keys to human-friendly display names so the output
+        # contains readable keys (e.g. 'Filtração') and tests/consumers can find them.
+        family_display_map = {
+            'filtracao': 'Filtração',
+            'recirculacao_iluminacao': 'Recirculação e Iluminação',
+            'tratamento_agua': 'Tratamento de Água',
+            'revestimento': 'Revestimento'
+        }
+
+        # Para cada família interna, aplicar swap se necessário e manter a chave interna
         for fam_name, fam_dict in [('filtracao', filtracao_sorted), ('recirculacao_iluminacao', recirculacao_sorted), ('tratamento_agua', tratamento_agua), ('revestimento', revestimento)]:
             if fam_dict:
                 selected_key = None
@@ -430,7 +439,10 @@ class AdvancedProductSelector:
                 if f'{fam_name}_selected' in answers and f'{fam_name}_previous' in answers:
                     selected_key = answers[f'{fam_name}_selected']
                     previous_key = answers[f'{fam_name}_previous']
+                # Usar a chave interna (fam_name) no budget; o frontend/serializador pode mapear para exibição
                 families_ordered[fam_name] = swap_item_preserve_quantity_and_position(fam_dict, selected_key, previous_key)
+        # Expor também o mapa de exibição para uso posterior pelo frontend/templates
+        budget['family_display_map'] = family_display_map
         budget['families'] = families_ordered
         # Calcular totais excluindo alternativos
         for family_name, family_items in budget['families'].items():
@@ -458,25 +470,47 @@ class AdvancedProductSelector:
         # Ordenar bombas: incluídas primeiro, depois alternativas
         suitable_pumps.sort(key=lambda x: (x['item_type'] != 'incluido', x.get('capacity_value', 0)))
         
+        import math
+        # Restore flat list behavior expected by UI, but skip duplicate product_ids
+        seen_product_ids = set()
         main_pump_id = None
         for i, pump in enumerate(suitable_pumps):
             item_type = pump.get('item_type', 'incluido')
-            quantity = 0 if item_type == 'opcional' else 1
-            
+            # Calcular quantidade necessária com base na capacidade da bomba
+            cap = pump.get('capacity_value', 0) or 0
+            if cap > 0:
+                quantity = math.ceil(m3_h / cap) if m3_h > 0 else (0 if item_type == 'opcional' else 1)
+                # Opcional = default 0 até o usuário selecionar
+                if item_type == 'opcional':
+                    quantity = 0
+            else:
+                quantity = 0 if item_type == 'opcional' else 1
+
+            # Garantir pelo menos 1 para itens não-opcionais
+            if item_type != 'opcional' and quantity < 1:
+                quantity = 1
+
             # Sufixo no nome baseado no tipo
             name_suffix = ''
             if item_type == 'opcional':
                 name_suffix = ' (OPCIONAL)'
             elif item_type == 'alternativo':
                 name_suffix = ' (ALTERNATIVO)'
-            
+
             # Usar numeração sequencial para manter ordem
             pump_key = f"pump_{i+1:02d}_{pump['id']}"
-            
+
             # Se é a primeira bomba, é a principal
-            if i == 0:
+            if main_pump_id is None and item_type == 'incluido':
                 main_pump_id = pump_key
-            
+            if main_pump_id is None and i == 0:
+                main_pump_id = pump_key
+
+            # Skip duplicates by product_id
+            pid = pump.get('id')
+            if pid is not None and pid in seen_product_ids:
+                continue
+
             pump_data = {
                 'name': pump['name'] + name_suffix,
                 'price': pump['base_price'],
@@ -484,17 +518,21 @@ class AdvancedProductSelector:
                 'unit': pump['unit'],
                 'item_type': item_type,
                 'reasoning': pump.get('reasoning', f'Bomba selecionada para {m3_h} m³/h - {power_type}'),
-                'can_change_type': True
+                'can_change_type': True,
+                'product_id': pid
             }
-            
+
             # Se é alternativo e temos bomba principal, linkar
             if item_type == 'alternativo' and main_pump_id:
                 pump_data['alternative_to'] = main_pump_id
-            
+
             products[pump_key] = pump_data
+            if pid is not None:
+                seen_product_ids.add(pid)
         
         # VÁLVULAS - LÓGICA COMPLETA IMPLEMENTADA  
         valve_products = self._get_suitable_valves(conditions['domotics'])
+        seen_valve_ids = set()
         main_valve_key = None
         for i, valve in enumerate(valve_products):
             item_type = valve.get('item_type', 'incluido')
@@ -505,8 +543,18 @@ class AdvancedProductSelector:
             elif item_type == 'alternativo':
                 name_suffix = ' (ALTERNATIVO)'
             valve_key = f"valve_{i+1:02d}_{valve['id']}"
-            if item_type == 'incluido' and main_valve_key is None:
+
+            # Determine main valve
+            if main_valve_key is None and item_type == 'incluido':
                 main_valve_key = valve_key
+            if main_valve_key is None and i == 0:
+                main_valve_key = valve_key
+
+            # Skip duplicates by product_id
+            vid = valve.get('id')
+            if vid is not None and vid in seen_valve_ids:
+                continue
+
             valve_data = {
                 'name': valve['name'] + name_suffix,
                 'price': valve['base_price'],
@@ -514,12 +562,16 @@ class AdvancedProductSelector:
                 'unit': valve['unit'],
                 'item_type': item_type,
                 'reasoning': valve.get('reasoning', 'Válvula selecionada automaticamente'),
-                'can_change_type': True
+                'can_change_type': True,
+                'product_id': vid
             }
             # Se for alternativo, garantir que alternative_to aponte para a principal
             if item_type == 'alternativo' and main_valve_key:
                 valve_data['alternative_to'] = main_valve_key
+
             products[valve_key] = valve_data
+            if vid is not None:
+                seen_valve_ids.add(vid)
         
     # FILTROS - IMPLEMENTADO
         location = conditions.get('location', 'exterior')
@@ -554,7 +606,8 @@ class AdvancedProductSelector:
                 'unit': best_filter['unit'],
                 'item_type': 'incluido',
                 'reasoning': f"Filtro selecionado para piscina {location} com capacidade {m3_h} m³/h",
-                'can_change_type': True  # Permitir troca de filtro
+                'can_change_type': True,  # Permitir troca de filtro
+                'product_id': best_filter.get('id')
             }
 
             # (Removido: a adição de válvula já é feita no bloco principal)
@@ -607,7 +660,8 @@ class AdvancedProductSelector:
                         'unit': vidro_fino['unit'],
                         'item_type': 'incluido',
                         'reasoning': f"Vidro filtrante fino: {n_sacos_vidro_fino} sacos (70% do total de vidro)",
-                        'can_change_type': False
+                        'can_change_type': False,
+                        'product_id': vidro_fino.get('id')
                     }
                     products[areia_key] = {
                         'name': areia_fina['name'],
@@ -617,7 +671,8 @@ class AdvancedProductSelector:
                         'item_type': 'alternativo',
                         'reasoning': f"Alternativa ao vidro filtrante fino: {n_sacos_areia_fina} sacos (areia fina)",
                         'alternative_to': vidro_key,
-                        'can_change_type': False
+                        'can_change_type': False,
+                        'product_id': areia_fina.get('id')
                     }
                 if vidro_grosso and areia_grossa:
                     vidro_key = f"vidro_grosso_{vidro_grosso_id}_{filter_key}"
@@ -629,7 +684,8 @@ class AdvancedProductSelector:
                         'unit': vidro_grosso['unit'],
                         'item_type': 'incluido',
                         'reasoning': f"Vidro filtrante grosso: {n_sacos_vidro_grosso} sacos (30% do total de vidro)",
-                        'can_change_type': False
+                        'can_change_type': False,
+                        'product_id': vidro_grosso.get('id')
                     }
                     products[areia_key] = {
                         'name': areia_grossa['name'],
@@ -639,7 +695,8 @@ class AdvancedProductSelector:
                         'item_type': 'alternativo',
                         'reasoning': f"Alternativa ao vidro filtrante grosso: {n_sacos_areia_grossa} sacos (areia grossa)",
                         'alternative_to': vidro_key,
-                        'can_change_type': False
+                        'can_change_type': False,
+                        'product_id': areia_grossa.get('id')
                     }
 
         # Corrigir agrupamento visual dos alternativos da válvula (garantia extra)
@@ -649,7 +706,33 @@ class AdvancedProductSelector:
                 if v.get('item_type') == 'alternativo' and 'Válvula' in v.get('name', ''):
                     v['alternative_to'] = main_valve_key
 
-        return products
+        # --- Remover possíveis duplicados ---
+        # Priorizar deduplicação por product_id quando disponível.
+        # Caso não haja product_id (itens criados manualmente), deduplicar por assinatura
+        # (name, price, unit, item_type).
+        seen_ids = set()
+        seen_sigs = set()
+        deduped = {}
+        for k, v in products.items():
+            pid = v.get('product_id')
+            # construir assinatura
+            sig = (v.get('name'),
+                   float(v.get('price')) if isinstance(v.get('price'), (int, float)) else v.get('price'),
+                   v.get('unit'),
+                   v.get('item_type'))
+
+            if pid is not None:
+                if pid in seen_ids:
+                    continue
+                seen_ids.add(pid)
+            else:
+                if sig in seen_sigs:
+                    continue
+                seen_sigs.add(sig)
+
+            deduped[k] = v
+
+        return deduped
     
     def _get_suitable_filters(self, location: str, required_m3_h: float) -> List[Dict]:
         """Encontra filtros adequados para a localização e capacidade"""
@@ -776,21 +859,84 @@ class AdvancedProductSelector:
                 pump['attributes'] = self.db.get_product_attributes(pump['id'])
                 pumps.append(pump)
             conn.close()
+            # If DB returned no active pump products, fall back to default_data
+            if not pumps:
+                try:
+                    from default_data import products, product_categories, product_attributes, attribute_types
+                except ImportError:
+                    products = globals().get('products', [])
+                    product_categories = globals().get('product_categories', [])
+                    product_attributes = globals().get('product_attributes', [])
+                    attribute_types = globals().get('attribute_types', [])
+
+                pump_cat_ids = [c['id'] for c in product_categories if 'bomba' in c['name'].lower()]
+                if not pump_cat_ids:
+                    bombas_cat = next((c for c in product_categories if c['name'] == 'Bomba de Filtração'), None)
+                    pump_cat_ids = [bombas_cat['id']] if bombas_cat else []
+
+                for prod in products:
+                    if prod.get('category_id') in pump_cat_ids and prod.get('is_active', 1):
+                        prod_copy = prod.copy()
+                        cat = next((c for c in product_categories if c['id'] == prod['category_id']), None)
+                        prod_copy['category_name'] = cat['name'] if cat else 'Bomba de Filtração'
+                        attrs = {}
+                        for pa in product_attributes:
+                            if pa['product_id'] != prod['id']:
+                                continue
+                            at = next((a for a in attribute_types if a['id'] == pa['attribute_type_id']), None)
+                            if not at:
+                                continue
+                            name = at['name']
+                            dt = at['data_type']
+                            if dt == 'numeric':
+                                attrs[name] = {'value': pa.get('value_numeric'), 'unit': at.get('unit')}
+                            elif dt == 'boolean':
+                                attrs[name] = bool(pa.get('value_boolean'))
+                            else:
+                                attrs[name] = pa.get('value_text')
+                        prod_copy['attributes'] = attrs
+                        pumps.append(prod_copy)
         except Exception as e:
             print(f"[Fallback] Erro ao acessar BD para bombas: {e}")
             try:
-                from default_data import products, product_categories
+                from default_data import products, product_categories, product_attributes, attribute_types
             except ImportError:
                 products = globals().get('products', [])
                 product_categories = globals().get('product_categories', [])
-            bombas_cat = next((c for c in product_categories if c['name'] == 'Bomba de Filtração'), None)
-            if bombas_cat:
-                for prod in products:
-                    if prod.get('category_id') == bombas_cat['id'] and prod.get('is_active', 1):
-                        prod_copy = prod.copy()
-                        prod_copy['category_name'] = 'Bomba de Filtração'
-                        prod_copy['attributes'] = self.db.get_product_attributes(prod['id'])
-                        pumps.append(prod_copy)
+                product_attributes = globals().get('product_attributes', [])
+                attribute_types = globals().get('attribute_types', [])
+
+            # Collect categories that look like pump categories (robust to naming differences)
+            pump_cat_ids = [c['id'] for c in product_categories if 'bomba' in c['name'].lower()]
+            if not pump_cat_ids:
+                bombas_cat = next((c for c in product_categories if c['name'] == 'Bomba de Filtração'), None)
+                pump_cat_ids = [bombas_cat['id']] if bombas_cat else []
+
+            for prod in products:
+                if prod.get('category_id') in pump_cat_ids and prod.get('is_active', 1):
+                    prod_copy = prod.copy()
+                    cat = next((c for c in product_categories if c['id'] == prod['category_id']), None)
+                    prod_copy['category_name'] = cat['name'] if cat else 'Bomba de Filtração'
+
+                    # Build attributes from fallback product_attributes / attribute_types
+                    attrs = {}
+                    for pa in product_attributes:
+                        if pa['product_id'] != prod['id']:
+                            continue
+                        at = next((a for a in attribute_types if a['id'] == pa['attribute_type_id']), None)
+                        if not at:
+                            continue
+                        name = at['name']
+                        dt = at['data_type']
+                        if dt == 'numeric':
+                            attrs[name] = {'value': pa.get('value_numeric'), 'unit': at.get('unit')}
+                        elif dt == 'boolean':
+                            attrs[name] = bool(pa.get('value_boolean'))
+                        else:
+                            attrs[name] = pa.get('value_text')
+
+                    prod_copy['attributes'] = attrs
+                    pumps.append(prod_copy)
         
         # Separar bombas por tipo
         standard_pumps = []

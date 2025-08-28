@@ -672,15 +672,60 @@
             border: 1px solid #e2e8f0;
             border-radius: 10px;
             padding: 1.25rem;
-            margin-bottom: 1rem;
-            transition: all 0.2s ease;
-        }
+            /* Wrapper that contains an index (left) and the category columns (right) */
+            .product-modal-wrapper {
+                display: grid;
+                grid-template-columns: 220px 1fr; /* sidebar + content */
+                gap: 1rem;
+                align-items: start;
+                margin-top: 1rem;
+            }
 
-        .product-item-modal:hover {
-            background: white;
-            border-color: #cbd5e1;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-        }
+            /* Index / sidebar */
+            .product-index {
+                position: sticky;
+                top: 80px;
+                align-self: start;
+                background: linear-gradient(180deg, rgba(255,255,255,0.85), rgba(250,250,250,0.85));
+                border: 1px solid rgba(226,232,240,0.9);
+                border-radius: 10px;
+                padding: 12px;
+                box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+                max-height: calc(85vh - 120px);
+                overflow-y: auto;
+            }
+
+            .product-index h5 {
+                margin: 0 0 8px 0;
+                font-size: 0.95rem;
+                color: #374151;
+                font-weight: 700;
+            }
+
+            .product-index-list { display: flex; flex-direction: column; gap: 6px; }
+
+            .product-index a {
+                display: block;
+                padding: 6px 8px;
+                border-radius: 6px;
+                color: #4b5563;
+                text-decoration: none;
+                font-size: 0.9rem;
+                transition: background 0.12s ease, color 0.12s ease, transform 0.12s ease;
+            }
+
+            .product-index a:hover { background: #f8fafc; color: #111827; transform: translateX(4px); }
+            .product-index a.active { background: linear-gradient(90deg,#7c3aed22,#a78bfa22); color: #5b21b6; font-weight:700; }
+
+            /* Category columns area (right side) */
+            .product-list-modal {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+                gap: 1rem;
+                max-height: calc(85vh - 220px);
+                overflow-y: auto;
+                padding: 0.5rem;
+            }
 
         .product-info-modal {
             display: flex;
@@ -764,11 +809,12 @@
 
         .add-product-modal-footer {
             background: #f8fafc;
-            padding: 1.5rem 2rem;
+            padding: 1rem 1.5rem; /* slightly inward */
             border-top: 1px solid #e2e8f0;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 12px;
         }
 
         .modal-back-btn, .modal-close-btn {
@@ -801,6 +847,64 @@
         .modal-close-btn:hover {
             background: #b91c1c;
             transform: translateY(-1px);
+        }
+
+        /* More specific rule to ensure footer modal buttons keep their intended style
+           even if other, less specific styles are present on the page. */
+        .add-product-modal .add-product-modal-footer .modal-back-btn,
+        .add-product-modal .add-product-modal-footer .modal-close-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.6rem 1.05rem;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 6px 18px rgba(15,23,42,0.06);
+            border: 1px solid rgba(0,0,0,0.03);
+            transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+        }
+
+        /* Position adjustments: back button left, close button right, both a bit higher */
+        /* Flex layout: back button left, close button right; stable when back button hidden */
+        .add-product-modal .add-product-modal-footer > #modalBackButton {
+            margin: 0;
+            display: flex;
+            align-items: center;
+        }
+
+        .add-product-modal .add-product-modal-footer > div:last-child {
+            margin-left: auto; /* pushes close button to the right */
+            display: flex;
+            align-items: center;
+        }
+
+        /* Safety overrides: force close button to the right and ensure hover styles are applied */
+        .add-product-modal .add-product-modal-footer .modal-close-btn {
+            margin-left: auto !important;
+            cursor: pointer !important;
+            z-index: 40 !important;
+        }
+
+        .add-product-modal .add-product-modal-footer .modal-back-btn {
+            margin-right: 12px !important;
+        }
+
+        .add-product-modal .add-product-modal-footer .modal-close-btn:hover {
+            transform: translateY(-8px) scale(1.03) !important;
+            box-shadow: 0 18px 44px rgba(220,38,38,0.22) !important;
+            background: linear-gradient(90deg,#ff6b6b,#ef4444) !important;
+        }
+
+        .add-product-modal .add-product-modal-footer .modal-back-btn { background: linear-gradient(90deg,#6b7280,#4b5563); color: #fff; }
+        .add-product-modal .add-product-modal-footer .modal-back-btn:hover { transform: translateY(-8px); box-shadow: 0 12px 28px rgba(75,85,99,0.14); }
+
+        .add-product-modal .add-product-modal-footer .modal-close-btn { background: linear-gradient(90deg,#ef4444,#dc2626); color: #fff; }
+        .add-product-modal .add-product-modal-footer .modal-close-btn:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 14px 36px rgba(220,38,38,0.18);
+            background: linear-gradient(90deg,#ff6b6b,#ef4444);
         }
 
         @media (max-width: 768px) {
@@ -1455,22 +1559,45 @@
                     
                     {# Criar lista organizada com alternativos agrupados após seus principais #}
                     {% set organized_products = [] %}
+                    {% set appended_alts = [] %} {# track alternative ids already appended to avoid duplicates #}
                     
                     {# Primeiro, adicionar produtos incluídos com seus alternativos #}
                     {% for product_id, product in included_products %}
                         {% set _ = organized_products.append((product_id, product)) %}
-                        {# Adicionar alternativos deste produto logo em seguida #}
+                        {# Adicionar alternativos deste produto logo em seguida
+                           Compatibilidade: 'alternative_to' pode ser a chave completa (ex: 'pump_01_13')
+                           ou apenas o id numérico ('13'). Normalizar ambos os casos. #}
                         {% for alt_id, alt_product in alternative_products %}
-                            {% if alt_product.get('alternative_to') == product_id %}
-                                {% set _ = organized_products.append((alt_id, alt_product)) %}
+                            {% set alt_target = alt_product.get('alternative_to') %}
+                            {% set prod_real_id = product.get('id') %}
+                            {% if alt_target == product_id or (alt_target is not none and (alt_target|string) == (prod_real_id|string)) %}
+                                {% if alt_id not in appended_alts %}
+                                    {% set _ = organized_products.append((alt_id, alt_product)) %}
+                                    {% set _ = appended_alts.append(alt_id) %}
+                                {% endif %}
                             {% endif %}
                         {% endfor %}
                     {% endfor %}
                     
-                    {# Adicionar alternativos órfãos (sem produto principal definido) #}
+                    {# Adicionar alternativos órfãos (sem produto principal definido) - tratar tanto chaves completas quanto ids numéricos #}
                     {% for alt_id, alt_product in alternative_products %}
-                        {% if not alt_product.get('alternative_to') or alt_product.get('alternative_to') not in family_products %}
-                            {% set _ = organized_products.append((alt_id, alt_product)) %}
+                        {% set alt_target = alt_product.get('alternative_to') %}
+                        {% if alt_id not in appended_alts %}
+                            {% if not alt_target %}
+                                {% set _ = organized_products.append((alt_id, alt_product)) %}
+                                {% set _ = appended_alts.append(alt_id) %}
+                            {% else %}
+                                {% set matched = false %}
+                                {% for existing_id, existing_prod in family_products.items() %}
+                                    {% if alt_target == existing_id or (existing_prod.get('id') is not none and (alt_target|string) == (existing_prod.get('id')|string)) %}
+                                        {% set matched = true %}
+                                    {% endif %}
+                                {% endfor %}
+                                {% if not matched %}
+                                    {% set _ = organized_products.append((alt_id, alt_product)) %}
+                                    {% set _ = appended_alts.append(alt_id) %}
+                                {% endif %}
+                            {% endif %}
                         {% endif %}
                     {% endfor %}
                     
@@ -5446,7 +5573,7 @@
         // ==========================================
 
         function showAddProductModal() {
-            // Buscar famílias disponíveis
+            // Buscar famílias disponíveis (deixar o servidor filtrar por famílias com produtos)
             fetch('/get_product_families')
             .then(response => response.json())
             .then(data => {
@@ -5469,6 +5596,44 @@
                 existingModal.remove();
             }
 
+            // Ensure modal-specific styles exist and are appended last so they win over other CSS.
+            if (!document.getElementById('addProductModalStyles')) {
+                const modalStyle = document.createElement('style');
+                modalStyle.id = 'addProductModalStyles';
+                modalStyle.innerHTML = `
+                /* Modal-specific overrides to guarantee button visuals and hover */
+                #addProductModal .add-product-modal-footer {
+                    position: relative !important;
+                    display: flex !important;
+                    justify-content: space-between !important;
+                    align-items: center !important;
+                    padding: 1rem 1.5rem !important;
+                }
+                #addProductModal .add-product-modal-footer .modal-back-btn {
+                    margin: 0 12px 0 0 !important;
+                    background: linear-gradient(90deg,#6b7280,#4b5563) !important;
+                    color: #fff !important;
+                    box-shadow: 0 8px 20px rgba(75,85,99,0.08) !important;
+                    border: 1px solid rgba(0,0,0,0.04) !important;
+                }
+                #addProductModal .add-product-modal-footer .modal-close-btn {
+                    margin-left: auto !important;
+                    padding: 0.6rem 1.1rem !important;
+                    border-radius: 10px !important;
+                    background: linear-gradient(90deg,#ef4444,#dc2626) !important;
+                    color: #fff !important;
+                    box-shadow: 0 8px 20px rgba(220,38,38,0.08) !important;
+                    z-index: 60 !important;
+                }
+                #addProductModal .add-product-modal-footer .modal-close-btn:hover {
+                    transform: translateY(-6px) scale(1.02) !important;
+                    box-shadow: 0 18px 44px rgba(220,38,38,0.22) !important;
+                    background: linear-gradient(90deg,#ff6b6b,#ef4444) !important;
+                }
+                `;
+                document.head.appendChild(modalStyle);
+            }
+
             // Ícones para famílias
             const familyIcons = {
                 'Filtração': 'fa-filter',
@@ -5480,6 +5645,9 @@
                 'Acessórios': 'fa-wrench'
             };
 
+            // Debug: mostrar families recebidas (ajuda a entender por que só aparece uma)
+            try { console.log('createAddProductModal - families.count=', families.length, 'names=', families.map(f => f.name)); } catch(e) {}
+
             // Normalizar e remover famílias duplicadas (mesmo nome, diferenças de caixa/espacos)
             const seenFamilies = new Set();
             const uniqueFamilies = [];
@@ -5490,6 +5658,9 @@
                     uniqueFamilies.push(f);
                 }
             });
+
+            // Safety guard: only render families that actually have products
+            const familiesWithProducts = uniqueFamilies.filter(f => (f.product_count || 0) > 0);
 
             const modal = document.createElement('div');
             modal.id = 'addProductModal';
@@ -5507,15 +5678,20 @@
                         <div id="familySelection">
                             <p style="color: #64748b; margin-bottom: 0.5rem;">Selecione a família do produto:</p>
                                 <div class="family-grid">
-                                ${uniqueFamilies.map(family => `
-                                    <div class="family-card-modal" onclick="showFamilyProducts('${family.name}')">
+                                ${uniqueFamilies.map(family => {
+                                    const displayName = family.name || '';
+                                    const slug = family.name_slug || displayName.normalize('NFKD').replace(/\p{Diacritic}/gu, '').replace(/[^a-zA-Z0-9]+/g, '_').toLowerCase();
+                                    const icon = familyIcons[displayName] || 'fa-box';
+                                    const count = family.product_count || 0;
+                                    return `
+                                    <div class="family-card-modal" onclick="showFamilyProducts('${slug}')">
                                         <div class="family-icon">
-                                            <i class="fas ${familyIcons[family.name] || 'fa-box'}"></i>
+                                            <i class="fas ${icon}"></i>
                                         </div>
-                                        <div class="family-title">${family.name}</div>
-                                        <div class="family-count">${family.product_count} produtos</div>
+                                        <div class="family-title">${displayName}</div>
+                                        <div class="family-count">${count} produtos</div>
                                     </div>
-                                `).join('')}
+                                `}).join('')}
                             </div>
                         </div>
                         <div id="productSelection" style="display: none;">
@@ -5524,13 +5700,13 @@
                     </div>
                     <div class="add-product-modal-footer">
                         <div id="modalBackButton" style="display: none;">
-                            <button class="modal-back-btn" onclick="backToFamilies()">
+                            <button class="modal-back-btn" onclick="backToFamilies()" style="padding:0.6rem 1.1rem;border-radius:10px;background:linear-gradient(90deg,#6b7280,#4b5563);color:#fff;border:1px solid rgba(0,0,0,0.04);box-shadow:0 8px 20px rgba(75,85,99,0.08);">
                                 <i class="fas fa-arrow-left"></i>
                                 Voltar às Famílias
                             </button>
                         </div>
                         <div>
-                            <button class="modal-close-btn" onclick="closeAddProductModal()">
+                            <button class="modal-close-btn" onclick="closeAddProductModal()" style="padding:0.6rem 1.1rem;border-radius:10px;background:linear-gradient(90deg,#ef4444,#dc2626);color:#fff;border:1px solid rgba(0,0,0,0.04);box-shadow:0 8px 20px rgba(220,38,38,0.08);">
                                 <i class="fas fa-times"></i>
                                 Fechar
                             </button>
@@ -5862,7 +6038,7 @@
                             </div>
                             <div class="header-text">
                                 <h3>Configuração Completa do Projeto</h3>
-                                <p>Edite as medidas da piscina e configurações técnicas</p>
+                                <p>Edite as medidas da piscina, preferências e configurações técnicas</p>
                             </div>
                         </div>
                         <button onclick="closeModal()" class="close-btn premium-close">&times;</button>
@@ -6063,6 +6239,46 @@
                                     </div>
                                 </div>
                                 <input type="hidden" id="edit-luz" value="${currentAnswers.luz || 'monofasica'}" />
+                            </div>
+                            
+                            <!-- Casa das máquinas (igual ao questionário) -->
+                            <div class="form-group premium-field">
+                                <label>Casa das máquinas estará abaixo do nível da água?</label>
+                                <div class="radio-group-premium">
+                                    <div class="radio-option-premium ${currentAnswers.casa_maquinas_abaixo === 'sim' ? 'selected' : ''}" data-value="sim">
+                                        <i class="fas fa-arrow-down" style="color: var(--primary);"></i>
+                                        <span>Sim</span>
+                                    </div>
+                                    <div class="radio-option-premium ${currentAnswers.casa_maquinas_abaixo === 'nao' ? 'selected' : ''}" data-value="nao">
+                                        <i class="fas fa-level-up-alt" style="color: var(--success);"></i>
+                                        <span>Não</span>
+                                    </div>
+                                </div>
+                                <input type="hidden" id="edit-casa_maquinas_abaixo" value="${currentAnswers.casa_maquinas_abaixo || 'nao'}" />
+                                <div style="margin-top:12px;">
+                                    <label class="premium-field" for="edit-casa_maquinas_desc">Observações sobre a casa das máquinas</label>
+                                    <textarea id="edit-casa_maquinas_desc" rows="2" style="width:100%;padding:10px;border:2px solid #e5e7eb;border-radius:8px;">${currentAnswers.casa_maquinas_desc || ''}</textarea>
+                                </div>
+                            </div>
+
+                            <!-- Tipo de luzes (igual ao questionário) -->
+                            <div class="form-group premium-field">
+                                <label>Tipo de luzes preferido:</label>
+                                <div class="radio-group-premium">
+                                    <div class="radio-option-premium ${currentAnswers.tipo_luzes === 'branco_frio' ? 'selected' : ''}" data-value="branco_frio">
+                                        <i class="fas fa-lightbulb" style="color:#87CEEB"></i>
+                                        <span>Branco Frio</span>
+                                    </div>
+                                    <div class="radio-option-premium ${currentAnswers.tipo_luzes === 'branco_adaptavel' ? 'selected' : ''}" data-value="branco_adaptavel">
+                                        <i class="fas fa-adjust" style="color: var(--warning);"></i>
+                                        <span>Branco Adaptável</span>
+                                    </div>
+                                    <div class="radio-option-premium ${currentAnswers.tipo_luzes === 'rgb' ? 'selected' : ''}" data-value="rgb">
+                                        <i class="fas fa-palette" style="color: var(--primary);"></i>
+                                        <span>RGB</span>
+                                    </div>
+                                </div>
+                                <input type="hidden" id="edit-tipo_luzes" value="${currentAnswers.tipo_luzes || 'branco_frio'}" />
                             </div>
                         </div>
                         
@@ -6265,6 +6481,13 @@
                 cobertura: document.getElementById('edit-cobertura').value,
                 tipo_cobertura_laminas: document.getElementById('edit-tipo-cobertura-laminas').value
             };
+
+            // Incluir casa das máquinas e tipo de luzes (idem questionário)
+            newAnswers.casa_maquinas_abaixo = document.getElementById('edit-casa_maquinas_abaixo') ? document.getElementById('edit-casa_maquinas_abaixo').value : 'nao';
+            newAnswers.casa_maquinas_desc = document.getElementById('edit-casa_maquinas_desc') ? document.getElementById('edit-casa_maquinas_desc').value : '';
+            newAnswers.tipo_luzes = document.getElementById('edit-tipo_luzes') ? document.getElementById('edit-tipo_luzes').value : 'branco_frio';
+
+            // (No extra fields)
             
             // Mostrar loading
             const saveBtn = document.querySelector('.btn.btn-primary.premium-btn.primary');

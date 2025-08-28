@@ -202,15 +202,9 @@ CREATE TABLE budget_family_totals (
 -- Inserir famílias de produtos
 INSERT INTO product_families (name, description, display_order) VALUES
 ('Filtração', 'Sistemas de filtração da água', 1),
-('Bombas', 'Bombas e sistemas de circulação', 2),
-('Aquecimento', 'Sistemas de aquecimento da água', 3),
-('Iluminação', 'Iluminação subaquática e ambiente', 4),
-('Automação', 'Sistemas de automação e controle', 5),
-('Limpeza', 'Sistemas automáticos de limpeza', 6),
-('Tratamento', 'Sistemas de tratamento químico', 7),
-('Revestimentos', 'Revestimentos e acabamentos', 8),
-('Estrutura', 'Elementos estruturais', 9),
-('Acessórios', 'Acessórios e extras', 10);
+('Recirculação e Iluminação', 'Sistemas de circulação', 2),
+('Tratamento da Água', 'Sistemas de tratamento químico', 7),
+('Revestimento', 'Revestimentos e acabamentos', 8);
 
 -- Inserir categorias de filtração
 INSERT INTO product_categories (family_id, name, display_order) VALUES

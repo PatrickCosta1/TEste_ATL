@@ -21,12 +21,6 @@ def family_display_name(family_name):
     """Converte nomes técnicos das famílias para nomes adequados em português"""
     family_display_names = {
         'filtracao': 'Filtração',
-        'limpeza': 'Limpeza',
-        'quimica': 'Química',
-        'acessorios': 'Acessórios',
-        'iluminacao': 'Iluminação',
-        'aquecimento': 'Aquecimento',
-        'automacao': 'Automação',
         'recirculacao_iluminacao': 'Recirculação e Iluminação',
         'tratamento_agua': 'Tratamento da Água',
         'revestimento': 'Revestimento'
@@ -1013,12 +1007,6 @@ def get_alternatives(family_name, current_product_id):
             'filtracao': 'Filtração',
             'recirculacao': 'Recirculação e Iluminação - Encastráveis Tanque Piscina',
             'recirculacao_iluminacao': 'Recirculação e Iluminação - Encastráveis Tanque Piscina',
-            'aquecimento': 'Aquecimento',
-            'iluminacao': 'Iluminação',
-            'automacao': 'Automação',
-            'bombas': 'Bombas',
-            'limpeza': 'Limpeza',
-            'acessorios': 'Acessórios',
             'tratamento': 'Tratamento de Água'
         }
         db_family_name = family_mapping.get(family_name, family_name)
@@ -1138,23 +1126,35 @@ def remove_product():
 def get_product_families():
     """Retorna todas as famílias de produtos disponíveis"""
     try:
-        raw_families = db_manager.get_all_families()
+        # Serve families directly from default_data.py fallback (ignore DB entirely)
+        try:
+            from default_data import product_families, product_categories, products
+        except Exception as ex:
+            return jsonify({'success': False, 'error': f'Fallback data not available: {ex}'}), 500
 
-        # Normalizar e deduplicar famílias (mesmo nome com diferenças de caixa/espacos)
-        normalized = {}
-        for f in raw_families:
-            key = (f.get('name') or '').strip().lower()
-            if key in normalized:
-                # Somar contagens caso exista duplicata
-                normalized[key]['product_count'] = (normalized[key].get('product_count', 0) or 0) + (f.get('product_count', 0) or 0)
-            else:
-                normalized[key] = dict(f)
+        families = []
+        for fam in product_families:
+            fam_copy = dict(fam)
+            fam_id = fam_copy.get('id')
+            cat_ids = [c.get('id') for c in product_categories if c.get('family_id') == fam_id]
+            fam_copy['product_count'] = sum(1 for p in products if p.get('category_id') in cat_ids and p.get('is_active', 1))
+            families.append(fam_copy)
 
-        families = list(normalized.values())
-        return jsonify({
-            'success': True,
-            'families': families
-        })
+        # Add deterministic slug for client-side use
+        try:
+            import unicodedata, re
+            def _make_slug(name: str) -> str:
+                if not name:
+                    return ''
+                s = unicodedata.normalize('NFKD', name).encode('ASCII', 'ignore').decode('ASCII').strip().lower()
+                s = re.sub(r'[^a-z0-9]+', '_', s).strip('_')
+                return s
+            for fam in families:
+                fam['name_slug'] = _make_slug(fam.get('name') or '')
+        except Exception:
+            pass
+
+        return jsonify({'success': True, 'families': families})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 400
 
@@ -1162,11 +1162,55 @@ def get_product_families():
 def get_family_products(family_name):
     """Retorna todos os produtos de uma família específica"""
     try:
-        products = db_manager.get_products_by_family(family_name)
-        return jsonify({
-            'success': True,
-            'products': products
-        })
+        # Use fallback default_data.py as the single source of truth for modal
+        try:
+            from default_data import product_families, product_categories, products, product_attributes, attribute_types
+        except Exception as ex:
+            return jsonify({'success': False, 'error': f'Fallback data not available: {ex}'}), 500
+
+        import unicodedata, re
+        def _normalize(s: str) -> str:
+            if not s:
+                return ''
+            s2 = unicodedata.normalize('NFKD', s).encode('ASCII', 'ignore').decode('ASCII').strip().lower()
+            s2 = re.sub(r'[^a-z0-9]+', '_', s2).strip('_')
+            return s2
+
+        normalized = _normalize(family_name)
+
+        fam = next((f for f in product_families if f.get('name') == family_name or _normalize(f.get('name', '')) == normalized), None)
+        if not fam:
+            return jsonify({'success': True, 'products': []})
+
+        fam_id = fam.get('id')
+        cats = [c for c in product_categories if c.get('family_id') == fam_id]
+        cat_ids = [c.get('id') for c in cats]
+
+        result = []
+        for prod in products:
+            if prod.get('category_id') in cat_ids and prod.get('is_active', 1):
+                cat = next((c for c in cats if c.get('id') == prod.get('category_id')), None)
+                prod_copy = prod.copy()
+                prod_copy['category_name'] = cat.get('name') if cat else None
+                prod_copy['family_name'] = fam.get('name')
+                prod_copy['attributes'] = {}
+                for pa in product_attributes:
+                    if pa.get('product_id') == prod.get('id'):
+                        attr_type = next((a for a in attribute_types if a.get('id') == pa.get('attribute_type_id')), None)
+                        if not attr_type:
+                            continue
+                        name = attr_type.get('name')
+                        data_type = attr_type.get('data_type')
+                        unit = attr_type.get('unit')
+                        if data_type == 'numeric':
+                            prod_copy['attributes'][name] = {'value': pa.get('value_numeric'), 'unit': unit}
+                        elif data_type == 'boolean':
+                            prod_copy['attributes'][name] = pa.get('value_boolean')
+                        else:
+                            prod_copy['attributes'][name] = pa.get('value_text')
+                result.append(prod_copy)
+
+        return jsonify({'success': True, 'products': result})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 400
 

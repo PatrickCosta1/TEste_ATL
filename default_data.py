@@ -23,12 +23,6 @@ product_families = [{'created_at': '2025-08-18 13:03:32',
   'display_order': 4,
   'id': 4,
   'is_active': 1,
-  'name': 'Revestimento'},
- {'created_at': '2025-08-26 09:15:35',
-  'description': 'Produtos de revestimento para piscinas',
-  'display_order': 4,
-  'id': 5,
-  'is_active': 1,
   'name': 'Revestimento'}]
 
 
