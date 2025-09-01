@@ -108,8 +108,13 @@ class AdvancedProductSelector:
                 if match:
                     capacidade = int(match.group(1))
                     if capacidade >= volume_m3:
-                        if melhor_inverclear is None or capacidade < int(re.search(r'(\d+)m3', melhor_inverclear['name']).group(1)):
+                        if melhor_inverclear is None:
                             melhor_inverclear = produto
+                        else:
+                            # Verificar capacidade do melhor atual
+                            melhor_match = re.search(r'(\d+)m3', melhor_inverclear['name'])
+                            if melhor_match and capacidade < int(melhor_match.group(1)):
+                                melhor_inverclear = produto
             
             if melhor_inverclear:
                 tratamento_agua['inverclear'] = {
@@ -148,8 +153,13 @@ class AdvancedProductSelector:
                 if match:
                     capacidade = int(match.group(1))
                     if capacidade >= volume_m3:
-                        if melhor_mr_pure is None or capacidade < int(re.search(r'(\d+)m3', melhor_mr_pure['name']).group(1)):
+                        if melhor_mr_pure is None:
                             melhor_mr_pure = produto
+                        else:
+                            # Verificar capacidade do melhor atual
+                            melhor_match = re.search(r'(\d+)m3', melhor_mr_pure['name'])
+                            if melhor_match and capacidade < int(melhor_match.group(1)):
+                                melhor_mr_pure = produto
             
             if melhor_mr_pure:
                 tratamento_agua['mr_pure'] = {
@@ -188,8 +198,13 @@ class AdvancedProductSelector:
                 if match:
                     capacidade = int(match.group(1))
                     if capacidade >= volume_m3:
-                        if melhor_mr_pure is None or capacidade < int(re.search(r'(\d+)m3', melhor_mr_pure['name']).group(1)):
+                        if melhor_mr_pure is None:
                             melhor_mr_pure = produto
+                        else:
+                            # Verificar capacidade do melhor atual
+                            melhor_match = re.search(r'(\d+)m3', melhor_mr_pure['name'])
+                            if melhor_match and capacidade < int(melhor_match.group(1)):
+                                melhor_mr_pure = produto
             
             if melhor_mr_pure:
                 tratamento_agua['mr_pure'] = {
@@ -211,8 +226,13 @@ class AdvancedProductSelector:
                 if match:
                     capacidade = int(match.group(1))
                     if capacidade >= m3_h:
-                        if melhor_uv is None or capacidade < int(re.search(r'(\d+)m3/h', melhor_uv['name']).group(1)):
+                        if melhor_uv is None:
                             melhor_uv = produto
+                        else:
+                            # Verificar capacidade do melhor atual
+                            melhor_match = re.search(r'(\d+)m3/h', melhor_uv['name'])
+                            if melhor_match and capacidade < int(melhor_match.group(1)):
+                                melhor_uv = produto
             
             if melhor_uv:
                 tratamento_agua['uv_titan'] = {
@@ -342,7 +362,61 @@ class AdvancedProductSelector:
                         'alternatives': [],
                         'product_id': tela_produto['id']
                     }
-        # Nenhuma lógica para cerâmica. Só executa lógica de revestimento se for tela.
+        
+        elif revestimento_tipo == 'ceramica':
+            # --- Lógica para revestimento cerâmico ---
+            revestimento_produtos = self.db.get_products_by_family('Revestimento')
+            ceramicos = [p for p in revestimento_produtos if p.get('category_name') == 'Cerâmica']
+            quantidades = answers.get('quantidades', {})
+            
+            # Produto fixo: Impermeabilização
+            impermeabilizacao = next((p for p in ceramicos if 'impermeabilização' in p['name'].lower() or 'imper' in p['code'].lower()), None)
+            if impermeabilizacao:
+                # Usar as áreas já calculadas no metrics
+                area_paredes = metrics.get('m2_paredes', 0)
+                area_fundo = metrics.get('m2_fundo', 0) 
+                area_total = area_paredes + area_fundo
+                
+                key_imper = "impermeabilizacao_ceramico"
+                q_override = quantidades.get(key_imper)
+                revestimento[key_imper] = {
+                    'name': impermeabilizacao['name'],
+                    'price': impermeabilizacao['base_price'],
+                    'quantity': float(q_override) if q_override is not None else round(area_total, 2),
+                    'unit': impermeabilizacao['unit'],
+                    'item_type': 'incluido',
+                    'reasoning': f'Impermeabilização cerâmica: {round(area_total, 2)} m² ({area_paredes}m² paredes + {area_fundo}m² fundo)',
+                    'can_change_type': True,
+                    'editable_price': True,  # Preço editável
+                    'editable_cost': True,   # Custo editável
+                    'alternatives': [],
+                    'product_id': impermeabilizacao['id']
+                }
+            
+            # Produto variável: Item personalizado
+            item_personalizado = next((p for p in ceramicos if 'personalizado' in p['name'].lower() or 'custom' in p['code'].lower()), None)
+            if item_personalizado:
+                # Usar a mesma quantidade da impermeabilização
+                area_paredes = metrics.get('m2_paredes', 0)
+                area_fundo = metrics.get('m2_fundo', 0) 
+                area_total = area_paredes + area_fundo
+                
+                key_custom = "item_ceramico_personalizado"
+                q_override = quantidades.get(key_custom)
+                revestimento[key_custom] = {
+                    'name': item_personalizado['name'],
+                    'price': item_personalizado['base_price'],
+                    'quantity': float(q_override) if q_override is not None else round(area_total, 2),
+                    'unit': item_personalizado['unit'],
+                    'item_type': 'incluido',
+                    'reasoning': f'Item personalizável para revestimento cerâmico: {round(area_total, 2)} m² (mesma quantidade da impermeabilização)',
+                    'can_change_type': True,
+                    'editable_name': True,   # Nome editável
+                    'editable_price': True,  # Preço editável
+                    'editable_cost': True,   # Custo editável
+                    'alternatives': [],
+                    'product_id': item_personalizado['id']
+                }
 
         # ORDEM FILTRACAO
         filtracao_order = ['filter', 'valve', 'pump', 'vidro', 'quadro']
@@ -371,6 +445,10 @@ class AdvancedProductSelector:
             # Encontrar índices
             prev_index = next((i for i, (k, v) in enumerate(items) if k == previous_key), None)
             sel_index = next((i for i, (k, v) in enumerate(items) if k == selected_key), None)
+
+            # Verificar se prev_index é válido
+            if prev_index is None:
+                return family_dict
 
             # Preparar alt_item (se já existir, copiar e atualizar quantidade)
             if sel_index is not None:
@@ -1330,7 +1408,7 @@ class AdvancedProductSelector:
         
         return products
     
-    def _get_product_by_name_pattern(self, pattern: str) -> dict:
+    def _get_product_by_name_pattern(self, pattern: str) -> dict | None:
         """Busca produto por padrão no nome, com fallback para dados Python se BD falhar"""
         try:
             conn = self.db.get_connection()

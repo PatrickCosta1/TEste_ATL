@@ -1685,7 +1685,14 @@
                             <div class="product-name-section">
                                 <div class="product-name-with-actions">
                                     <span class="product-name-compact">
-                                        {% if product.item_type == 'alternativo' %}
+                                        {% if product.get('editable_name', False) %}
+                                        <span class="editable-name" contenteditable="true" 
+                                              data-product-id="{{ product_id }}" 
+                                              data-original-name="{{ product.name }}"
+                                              onblur="updateProductName('{{ product_id }}', this.textContent)"
+                                              title="Clique para editar o nome">{{ product.name }}</span>
+                                        <i class="fas fa-edit edit-icon" title="Nome editável"></i>
+                                        {% elif product.item_type == 'alternativo' %}
                                         ↳ {{ product.name.replace('Alternativa: ', '').replace(' (ALTERNATIVO)', '') }}
                                         {% else %}
                                         {{ product.name }}
@@ -1698,7 +1705,18 @@
                                     </span>
                                 </div>
                                 <div class="product-specs">
+                                    {% if product.get('editable_price', False) %}
+                                    <span class="spec-price">
+                                        <span class="editable-price" contenteditable="true" 
+                                              data-product-id="{{ product_id }}"
+                                              data-original-price="{{ product.price }}"
+                                              onblur="updateProductPrice('{{ product_id }}', this.textContent)"
+                                              title="Clique para editar o preço">{{ "%.2f"|format(product.price) }}</span>€/{{ product.get('unit', 'un') }}
+                                        <i class="fas fa-edit edit-icon" title="Preço editável"></i>
+                                    </span>
+                                    {% else %}
                                     <span class="spec-price">{{ "%.2f"|format(product.price) }}€/{{ product.get('unit', 'un') }}</span>
+                                    {% endif %}
                                     <span class="spec-qty">Qtd: {{ product.quantity }}</span>
                                 </div>
                             </div>
@@ -1709,10 +1727,10 @@
                                 <span class="price-total-compact">{{ "%.2f"|format(product.price * product.quantity) }}€</span>
                                 <div class="qty-controls-compact">
                                     <button class="qty-btn-compact" onclick="changeQuantity('{{ product_id }}', -1)">−</button>
-                                    <input type="number" class="qty-input-compact" 
+                                    <input type="number" class="qty-input-compact" step="0.01"
                                            id="qty_{{ product_id }}" 
                                            value="{{ product.quantity }}" 
-                                           onchange="updateProductQuantity('{{ product_id }}', this.value)" min="1">
+                                           onchange="updateProductQuantity('{{ product_id }}', this.value)" min="0.01">
                                     <button class="qty-btn-compact" onclick="changeQuantity('{{ product_id }}', 1)">+</button>
                                 </div>
                                 <button class="btn-offer" title="Marcar como Oferta" onclick="setOffer('{{ family_name }}','{{ product_id }}')">
@@ -1730,7 +1748,7 @@
                                 <!-- Controles sempre visíveis para produtos alternativos -->
                                 <div class="qty-controls-small">
                                     <button class="qty-btn-small" onclick="changeQuantity('{{ product_id }}', -1)">−</button>
-                                    <input type="number" class="qty-input-small" 
+                                    <input type="number" class="qty-input-small" step="0.01"
                                            id="qty_{{ product_id }}" 
                                            value="{{ product.quantity }}" 
                                            onchange="updateProductQuantity('{{ product_id }}', this.value)" min="0">
@@ -1754,7 +1772,7 @@
                                 <!-- Controles sempre visíveis para produtos opcionais -->
                                 <div class="qty-controls-small">
                                     <button class="qty-btn-small" onclick="changeQuantity('{{ product_id }}', -1)">−</button>
-                                    <input type="number" class="qty-input-small" 
+                                    <input type="number" class="qty-input-small" step="0.01"
                                            id="qty_{{ product_id }}" 
                                            value="{{ product.quantity }}" 
                                            onchange="updateProductQuantity('{{ product_id }}', this.value)" min="0">
@@ -1773,10 +1791,10 @@
                                 <span class="price-total-compact">{{ "%.2f"|format(product.price * product.quantity) }}€</span>
                                 <div class="qty-controls-compact">
                                     <button class="qty-btn-compact" onclick="changeQuantity('{{ product_id }}', -1)">-</button>
-                                    <input type="number" class="qty-input-compact" 
+                                    <input type="number" class="qty-input-compact" step="0.01"
                                            id="qty_{{ product_id }}" 
                                            value="{{ product.quantity }}" 
-                                           onchange="updateProductQuantity('{{ product_id }}', this.value)" min="1">
+                                           onchange="updateProductQuantity('{{ product_id }}', this.value)" min="0.01">
                                     <button class="qty-btn-compact" onclick="changeQuantity('{{ product_id }}', 1)">+</button>
                                 </div>
                                 <button class="btn-toggle-optional active" 
@@ -2444,6 +2462,47 @@
             background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
             padding: 2px 6px;
             border-radius: 4px;
+        }
+
+        /* Estilos para campos editáveis */
+        .editable-name, .editable-price {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border: 1px dashed #f59e0b;
+            border-radius: 4px;
+            padding: 2px 4px;
+            cursor: text;
+            transition: all 0.3s ease;
+        }
+
+        .editable-name:hover, .editable-price:hover {
+            background: linear-gradient(135deg, #fde68a 0%, #fcd34d 100%);
+            border: 1px dashed #d97706;
+        }
+
+        .editable-name:focus, .editable-price:focus {
+            outline: none;
+            background: #ffffff;
+            border: 2px solid #f59e0b;
+            box-shadow: 0 0 5px rgba(245, 158, 11, 0.3);
+        }
+
+        .edit-icon {
+            font-size: 10px;
+            color: #f59e0b;
+            margin-left: 4px;
+            opacity: 0.7;
+        }
+
+        .editable-name {
+            font-weight: 600;
+            min-width: 100px;
+            display: inline-block;
+        }
+
+        .editable-price {
+            font-weight: 500;
+            min-width: 40px;
+            display: inline-block;
         }
         
         .product-controls-right {
@@ -5133,7 +5192,46 @@
                 quantity = 0;
             }
             
-            const validQuantity = Math.max(0, parseInt(quantity) || 0);  // Permitir quantidade 0
+            // Permitir vírgula como separador decimal
+            let quantityStr = String(quantity).replace(',', '.');
+            const validQuantity = Math.max(0, parseFloat(quantityStr) || 0);  // Permitir decimais
+            
+            // Sincronizar quantidades dos produtos de cerâmica (102 e 103)
+            if (productId === '102') {
+                // Se é o primeiro produto de cerâmica (impermeabilização), sincronizar com o segundo
+                const secondProduct = document.getElementById('qty_103');
+                if (secondProduct) {
+                    secondProduct.value = validQuantity;
+                    // Atualizar também o segundo produto no servidor
+                    fetch('/update_quantity', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            product_id: '103',
+                            quantity: validQuantity
+                        })
+                    });
+                }
+            } else if (productId === '103') {
+                // Se é o segundo produto de cerâmica, sincronizar com o primeiro
+                const firstProduct = document.getElementById('qty_102');
+                if (firstProduct) {
+                    firstProduct.value = validQuantity;
+                    // Atualizar também o primeiro produto no servidor
+                    fetch('/update_quantity', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            product_id: '102',
+                            quantity: validQuantity
+                        })
+                    });
+                }
+            }
             
             // Enviar atualização para o servidor
             fetch('/update_quantity', {
@@ -5606,6 +5704,28 @@
                     card.style.opacity = '1';
                     card.style.transform = 'translateY(0)';
                 }, index * 200);
+            });
+            
+            // Adicionar ouvintes para aceitar vírgulas nos campos de quantidade
+            const quantityInputs = document.querySelectorAll('input[type="number"]');
+            quantityInputs.forEach(input => {
+                if (input.id && input.id.startsWith('qty_')) {
+                    // Permitir vírgula como separador decimal
+                    input.addEventListener('input', function(e) {
+                        let value = e.target.value;
+                        // Substituir vírgula por ponto para validação
+                        if (value.includes(',')) {
+                            e.target.value = value.replace(',', '.');
+                        }
+                    });
+                    
+                    // Tratar evento blur para normalizar o valor
+                    input.addEventListener('blur', function(e) {
+                        let value = parseFloat(e.target.value.replace(',', '.')) || 0;
+                        if (value < 0) value = 0;
+                        e.target.value = value.toFixed(2);
+                    });
+                }
             });
         });
 
@@ -7370,6 +7490,131 @@
             document.body.appendChild(successDiv);
             
             setTimeout(() => successDiv.remove(), 3000);
+        }
+
+        // Função para atualizar nome do produto
+        function updateProductName(productId, newName) {
+            if (!newName || newName.trim() === '') {
+                // Restaurar nome original se estiver vazio
+                const nameElement = document.querySelector(`[data-product-id="${productId}"].editable-name`);
+                if (nameElement) {
+                    nameElement.textContent = nameElement.dataset.originalName;
+                }
+                return;
+            }
+
+            fetch('/update_product_name', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    product_id: productId,
+                    name: newName.trim()
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showSuccessMessage('Nome atualizado com sucesso');
+                } else {
+                    // Restaurar nome original em caso de erro
+                    const nameElement = document.querySelector(`[data-product-id="${productId}"].editable-name`);
+                    if (nameElement) {
+                        nameElement.textContent = nameElement.dataset.originalName;
+                    }
+                    showErrorMessage(data.error || 'Erro ao atualizar nome');
+                }
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                // Restaurar nome original em caso de erro
+                const nameElement = document.querySelector(`[data-product-id="${productId}"].editable-name`);
+                if (nameElement) {
+                    nameElement.textContent = nameElement.dataset.originalName;
+                }
+                showErrorMessage('Erro ao atualizar nome');
+            });
+        }
+
+        // Função para atualizar preço do produto
+        function updateProductPrice(productId, newPriceText) {
+            // Permitir vírgula como separador decimal
+            const cleanPrice = newPriceText.replace(',', '.');
+            const newPrice = parseFloat(cleanPrice);
+            
+            if (isNaN(newPrice) || newPrice < 0) {
+                // Restaurar preço original se inválido
+                const priceElement = document.querySelector(`[data-product-id="${productId}"].editable-price`);
+                if (priceElement) {
+                    priceElement.textContent = parseFloat(priceElement.dataset.originalPrice).toFixed(2);
+                }
+                showErrorMessage('Preço inválido. Use apenas números (vírgula ou ponto para decimais)');
+                return;
+            }
+
+            fetch('/update_product_price', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    product_id: productId,
+                    price: newPrice
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showSuccessMessage('Preço atualizado com sucesso');
+                    // Atualizar o display do preço
+                    const priceElement = document.querySelector(`[data-product-id="${productId}"].editable-price`);
+                    if (priceElement) {
+                        priceElement.textContent = newPrice.toFixed(2);
+                        priceElement.dataset.originalPrice = newPrice;
+                    }
+                    // Recarregar para atualizar totais
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    // Restaurar preço original em caso de erro
+                    const priceElement = document.querySelector(`[data-product-id="${productId}"].editable-price`);
+                    if (priceElement) {
+                        priceElement.textContent = parseFloat(priceElement.dataset.originalPrice).toFixed(2);
+                    }
+                    showErrorMessage(data.error || 'Erro ao atualizar preço');
+                }
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                // Restaurar preço original em caso de erro
+                const priceElement = document.querySelector(`[data-product-id="${productId}"].editable-price`);
+                if (priceElement) {
+                    priceElement.textContent = parseFloat(priceElement.dataset.originalPrice).toFixed(2);
+                }
+                showErrorMessage('Erro ao atualizar preço');
+            });
+        }
+
+        function showErrorMessage(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+                color: #dc2626;
+                padding: 12px 16px;
+                border-radius: 8px;
+                border: 1px solid #fecaca;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                z-index: 10000;
+                font-weight: 500;
+                max-width: 300px;
+            `;
+            errorDiv.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${message}`;
+            document.body.appendChild(errorDiv);
+            
+            setTimeout(() => errorDiv.remove(), 4000);
         }
     </script>
 </body>

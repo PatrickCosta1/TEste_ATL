@@ -144,7 +144,10 @@ def calculate_metrics():
             # Converte strings para float quando necessário
             for key in ['comprimento', 'largura', 'prof_min', 'prof_max']:
                 if key in data:
-                    data[key] = float(data[key])
+                    try:
+                        data[key] = str(float(data[key]))  # Converte para float e depois para string
+                    except (ValueError, TypeError):
+                        data[key] = '0'
         
         # Extrair dimensões
         comprimento = float(data.get('comprimento', 0))
@@ -609,7 +612,7 @@ def update_quantity():
             quantity_value = 0
         
         try:
-            new_quantity = int(quantity_value)
+            new_quantity = float(quantity_value)  # Usar float para aceitar decimais
         except (ValueError, TypeError):
             new_quantity = 0
         
@@ -617,7 +620,7 @@ def update_quantity():
         product_found = False
         for family_name, family_products in budget.get('families', {}).items():
             if product_id in family_products:
-                family_products[product_id]['quantity'] = max(0, new_quantity)  # Permitir quantidade 0
+                family_products[product_id]['quantity'] = max(0, new_quantity)  # Permitir quantidade 0 e decimais
                 product_found = True
                 break
         
@@ -636,6 +639,115 @@ def update_quantity():
             budget['total_price'] = sum(budget['family_totals'].values())
             session['current_budget'] = budget
             
+            return jsonify({
+                'success': True,
+                'new_total': budget['total_price']
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Produto não encontrado'
+            }), 404
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 400
+
+@app.route('/update_product_name', methods=['POST'])
+def update_product_name():
+    """Atualizar nome de um produto editável"""
+    try:
+        data = request.get_json()
+        budget = session.get('current_budget', {})
+        
+        product_id = data.get('product_id')
+        new_name = data.get('name', '').strip()
+        
+        if not product_id or not new_name:
+            return jsonify({
+                'success': False,
+                'error': 'ID do produto e nome são obrigatórios'
+            }), 400
+        
+        # Encontrar o produto em todas as famílias
+        product_found = False
+        for family_name, family_products in budget.get('families', {}).items():
+            if product_id in family_products:
+                # Verificar se o produto permite edição de nome
+                if family_products[product_id].get('editable_name', False):
+                    family_products[product_id]['name'] = new_name
+                    product_found = True
+                    break
+                else:
+                    return jsonify({
+                        'success': False,
+                        'error': 'Este produto não permite edição de nome'
+                    }), 400
+        
+        if product_found:
+            session['current_budget'] = budget
+            return jsonify({'success': True})
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Produto não encontrado'
+            }), 404
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 400
+
+@app.route('/update_product_price', methods=['POST'])
+def update_product_price():
+    """Atualizar preço de um produto editável"""
+    try:
+        data = request.get_json()
+        budget = session.get('current_budget', {})
+        
+        product_id = data.get('product_id')
+        new_price = data.get('price')
+        
+        if not product_id or new_price is None:
+            return jsonify({
+                'success': False,
+                'error': 'ID do produto e preço são obrigatórios'
+            }), 400
+        
+        try:
+            new_price = float(new_price)
+            if new_price < 0:
+                raise ValueError("Preço não pode ser negativo")
+        except (ValueError, TypeError):
+            return jsonify({
+                'success': False,
+                'error': 'Preço deve ser um número válido e não negativo'
+            }), 400
+        
+        # Encontrar o produto em todas as famílias
+        product_found = False
+        for family_name, family_products in budget.get('families', {}).items():
+            if product_id in family_products:
+                # Verificar se o produto permite edição de preço
+                if family_products[product_id].get('editable_price', False):
+                    family_products[product_id]['price'] = new_price
+                    product_found = True
+                    
+                    # Recalcular totais
+                    calculate_and_update_totals(budget)
+                    budget['total_price'] = sum(budget['family_totals'].values())
+                    break
+                else:
+                    return jsonify({
+                        'success': False,
+                        'error': 'Este produto não permite edição de preço'
+                    }), 400
+        
+        if product_found:
+            session['current_budget'] = budget
             return jsonify({
                 'success': True,
                 'new_total': budget['total_price']
@@ -859,10 +971,10 @@ def update_project_configuration():
         # Medidas
         dimensions = session.get('pool_dimensions', {})
         try:
-            dimensions['comprimento'] = float(data.get('comprimento', dimensions.get('comprimento', 0)))
-            dimensions['largura'] = float(data.get('largura', dimensions.get('largura', 0)))
-            dimensions['prof_min'] = float(data.get('prof_min', dimensions.get('prof_min', 0)))
-            dimensions['prof_max'] = float(data.get('prof_max', dimensions.get('prof_max', 0)))
+            dimensions['comprimento'] = float(data.get('comprimento', dimensions.get('comprimento', 0)) or 0)
+            dimensions['largura'] = float(data.get('largura', dimensions.get('largura', 0)) or 0)
+            dimensions['prof_min'] = float(data.get('prof_min', dimensions.get('prof_min', 0)) or 0)
+            dimensions['prof_max'] = float(data.get('prof_max', dimensions.get('prof_max', 0)) or 0)
         except Exception:
             # keep existing if conversion fails
             pass
@@ -1124,7 +1236,7 @@ def get_alternatives(family_name, current_product_id):
             if needle:
                 # procurar por name/model/code que slugifique para o mesmo
                 for p in fallback_products:
-                    if slugify(p.get('name')) == needle or slugify(p.get('model')) == needle or slugify(p.get('code')) == needle:
+                    if slugify(p.get('name', '') or '') == needle or slugify(p.get('model', '') or '') == needle or slugify(p.get('code', '') or '') == needle:
                         current_product = dict(p)
                         print(f"[ALT-DEBUG] Resolved current_product_id '{current_product_id}' by slug match -> {p.get('id')}")
                         break
