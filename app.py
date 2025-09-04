@@ -22,7 +22,7 @@ def family_display_name(family_name):
     family_display_names = {
         'filtracao': 'Filtração',
         'recirculacao_iluminacao': 'Recirculação e Iluminação',
-        'tratamento_agua': 'Tratamento da Água',
+        'tratamento_agua': 'Tratamento de Água',
         'revestimento': 'Revestimento'
     }
     return family_display_names.get(family_name, family_name.title())
@@ -33,7 +33,7 @@ product_selector = AdvancedProductSelector()
 db_manager = DatabaseManager()
 
 def calculate_and_update_totals(budget):
-    """Calcula e atualiza os totais das famílias com valores base e com multiplicador"""
+    """Calcula e atualiza os totais das famílias com valores base, multiplicador e IVA"""
     if 'family_totals' not in budget:
         budget['family_totals'] = {}
     if 'family_totals_base' not in budget:
@@ -42,6 +42,15 @@ def calculate_and_update_totals(budget):
         budget['total_price'] = 0
     if 'subtotal_base' not in budget:
         budget['subtotal_base'] = 0
+    # Novos campos para IVA
+    if 'iva_rate' not in budget:
+        budget['iva_rate'] = 0.23  # IVA padrão 23% em Portugal
+    if 'subtotal_with_margin' not in budget:
+        budget['subtotal_with_margin'] = 0
+    if 'iva_amount' not in budget:
+        budget['iva_amount'] = 0
+    if 'total_with_iva' not in budget:
+        budget['total_with_iva'] = 0
     
     # Verificar estrutura do orçamento - pode ser 'selected_products' ou 'families'
     products_data = budget.get('selected_products', budget.get('families', {}))
@@ -75,7 +84,16 @@ def calculate_and_update_totals(budget):
     
     # Calcular totais gerais
     budget['subtotal_base'] = sum(budget['family_totals_base'].values())
-    budget['total_price'] = sum(budget['family_totals'].values())
+    budget['subtotal_with_margin'] = sum(budget['family_totals'].values())
+    
+    # Calcular IVA sobre o valor com margem
+    budget['iva_amount'] = budget['subtotal_with_margin'] * budget['iva_rate']
+    
+    # Total final com IVA
+    budget['total_with_iva'] = budget['subtotal_with_margin'] + budget['iva_amount']
+    
+    # Manter total_price para compatibilidade (valor com margem sem IVA)
+    budget['total_price'] = budget['subtotal_with_margin']
 
 @app.route('/static/<path:filename>')
 def static_files(filename):
@@ -1187,8 +1205,8 @@ def get_alternatives(family_name, current_product_id):
 
         family_mapping = {
             'filtracao': 'Filtração',
-            'recirculacao': 'Recirculação e Iluminação - Encastráveis Tanque Piscina',
-            'recirculacao_iluminacao': 'Recirculação e Iluminação - Encastráveis Tanque Piscina',
+            'recirculacao': 'Recirculação e Iluminação',
+            'recirculacao_iluminacao': 'Recirculação e Iluminação',
             'tratamento': 'Tratamento de Água'
         }
         db_family_name = family_mapping.get(family_name, family_name)
@@ -1604,7 +1622,7 @@ def add_product():
             'automação': 'automacao',
             'limpeza': 'limpeza',
             'acessórios': 'acessorios',
-            'recirculação e iluminação - encastráveis tanque piscina': 'recirculacao_iluminacao'
+            'recirculação e iluminação': 'recirculacao_iluminacao'
         }
         family_mapping = { _normalize(k): v for k, v in family_mapping_raw.items() }
 

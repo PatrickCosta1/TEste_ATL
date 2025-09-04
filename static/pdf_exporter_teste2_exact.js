@@ -133,7 +133,7 @@ async function gerarPDF(orcamento) {
   let y = 780;
       
       // Título (IGUAL AO TESTE2)
-      currentPage.drawText('Produtos do Orçamento', {
+      currentPage.drawText('Orçamento', {
         x: 50, y, size: 15, font: fontBold, color: rgb(0.07, 0.22, 0.45)
       });
       y -= 32;
@@ -172,7 +172,50 @@ async function gerarPDF(orcamento) {
       
       let totalGeral = 0;
       
-      for (const categoria of Object.keys(categoriasOrganizadas)) {
+      // Map de nomes de famílias para exibição no PDF (garante nomes estilizados)
+      const familyDisplayNames = {
+        'filtracao': 'Filtração',
+        'recirculacao_iluminacao': 'Recirculação e Iluminação',
+        'tratamento_agua': 'Tratamento de Água',
+        'revestimento': 'Revestimento',
+        'aquecimento': 'Aquecimento'
+        // adicionar outras famílias se necessário
+      };
+
+      // Ordem desejada das famílias no PDF (preserva sequência definida no app)
+      const familyOrder = ['filtracao', 'recirculacao_iluminacao', 'tratamento_agua', 'revestimento', 'aquecimento'];
+
+      // Helper: normaliza uma string para chave comparável (remove acentos, caixa e espaços)
+      function normalizeKey(s) {
+        if (!s) return '';
+        return s.toString().toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-z0-9]+/g, '_')
+          .replace(/^_+|_+$/g, '');
+      }
+
+      // Criar um mapa das categories existentes com sua chave normalizada
+      const categoriesMap = {}; // normalizedKey -> originalKey
+      Object.keys(categoriasOrganizadas).forEach(origKey => {
+        const nk = normalizeKey(origKey);
+        categoriesMap[nk] = origKey;
+      });
+
+      // Construir orderedCategories usando familyOrder normalizada; aceitar também chaves originais
+      const orderedCategories = [];
+      familyOrder.forEach(fam => {
+        const nk = normalizeKey(fam);
+        if (categoriesMap[nk] && orderedCategories.indexOf(categoriesMap[nk]) === -1) {
+          orderedCategories.push(categoriesMap[nk]);
+        }
+      });
+      // Adicionar categorias restantes que não existem na familyOrder (mantendo ordem original)
+      Object.keys(categoriasOrganizadas).forEach(origKey => {
+        if (orderedCategories.indexOf(origKey) === -1) orderedCategories.push(origKey);
+      });
+
+      for (const categoria of orderedCategories) {
         console.log(`DEBUG: Renderizando categoria ${categoria} com ${categoriasOrganizadas[categoria].length} itens`);
         // Categoria título (estilizado com design premium) - IGUAL AO TESTE2
         if (y < 120) {
@@ -194,7 +237,10 @@ async function gerarPDF(orcamento) {
           borderColor: rgb(0.05, 0.15, 0.35)
         });
         
-        currentPage.drawText(sanitizeText(categoria), {
+        // Determinar displayName: procurar por familyDisplayNames usando chave normalizada
+        const normalizedCategoria = normalizeKey(categoria);
+        const displayName = familyDisplayNames[normalizedCategoria] || familyDisplayNames[categoria] || categoria;
+        currentPage.drawText(sanitizeText(displayName), {
           x: 60, y: y+3, size: 11, font: fontBold, color: rgb(1,1,1)
         });
         y -= 28;
@@ -322,7 +368,8 @@ async function gerarPDF(orcamento) {
           let corPadrao = rgb(0.1, 0.2, 0.4); // Cor padrão azul escuro para todas as colunas normais
           
           currentPage.drawText(String(item.qtd), { x: colX.qtd, y, size: tamanhoFonte, font, color: corPadrao });
-          currentPage.drawText(sanitizeText(item.unidade || ''), { x: colX.unidade, y, size: tamanhoFonte, font, color: corPadrao });
+          const unidadeText = (item.unidade || '').toString().toLowerCase();
+          currentPage.drawText(sanitizeText(unidadeText), { x: colX.unidade, y, size: tamanhoFonte, font, color: corPadrao });
           currentPage.drawText(sanitizeText(precoUnit), { x: colX.preco, y, size: tamanhoFonte, font, color: corPadrao });
           
           // Subtotal - APENAS esta coluna tem cores especiais
@@ -420,6 +467,49 @@ async function gerarPDF(orcamento) {
       
       y -= 10; // Espaço antes do total
       
+      // Calcular valores com IVA (23% padrão)
+      const ivaRate = 0.23;
+      const subtotalSemIva = orcamento.total;
+      const ivaAmount = subtotalSemIva * ivaRate;
+      const totalComIva = subtotalSemIva + ivaAmount;
+      
+      // === SUBTOTAL (SEM IVA) ===
+      // Fundo para subtotal
+      currentPage.drawRectangle({
+        x: 340, y: y-2, width: 210, height: 18, 
+        color: rgb(0.95, 0.97, 1),
+        borderWidth: 1,
+        borderColor: rgb(0.7, 0.7, 0.7)
+      });
+      
+      currentPage.drawText('Subtotal (s/ IVA):', {
+        x: 350, y: y+2, size: 10, font: fontBold, color: rgb(0.07, 0.22, 0.45)
+      });
+      
+      currentPage.drawText(`€${subtotalSemIva.toLocaleString('pt-PT', {minimumFractionDigits:2})}`, {
+        x: 470, y: y+2, size: 10, font: fontBold, color: rgb(0.07, 0.22, 0.45)
+      });
+      y -= 22;
+      
+      // === IVA ===
+      // Fundo para IVA (verde claro)
+      currentPage.drawRectangle({
+        x: 340, y: y-2, width: 210, height: 18, 
+        color: rgb(0.93, 0.99, 0.95),
+        borderWidth: 1,
+        borderColor: rgb(0.059, 0.6, 0.4)
+      });
+      
+      currentPage.drawText('IVA (23%):', {
+        x: 350, y: y+2, size: 10, font: fontBold, color: rgb(0.059, 0.6, 0.4)
+      });
+      
+      currentPage.drawText(`€${ivaAmount.toLocaleString('pt-PT', {minimumFractionDigits:2})}`, {
+        x: 470, y: y+2, size: 10, font: fontBold, color: rgb(0.059, 0.6, 0.4)
+      });
+      y -= 22;
+      
+      // === TOTAL COM IVA ===
       // Sombra sutil para o total
       currentPage.drawRectangle({
         x: 342, y: y-4, width: 210, height: 22, color: rgb(0.85, 0.85, 0.85), opacity: 0.5
@@ -433,12 +523,11 @@ async function gerarPDF(orcamento) {
         borderColor: rgb(0.05, 0.15, 0.35)
       });
       
-      currentPage.drawText('Total:', {
+      currentPage.drawText('Total (c/ IVA):', {
         x: 350, y: y+4, size: 12, font: fontBold, color: rgb(1,1,1)
       });
       
-      // USA O TOTAL FINAL DO ORÇAMENTO (com multiplicadores já aplicados)
-      currentPage.drawText(`€${orcamento.total.toLocaleString('pt-PT', {minimumFractionDigits:2})}`, {
+      currentPage.drawText(`€${totalComIva.toLocaleString('pt-PT', {minimumFractionDigits:2})}`, {
         x: 470, y: y+4, size: 12, font: fontBold, color: rgb(1,1,1)
       });
       y -= 30;

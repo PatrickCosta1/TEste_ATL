@@ -418,6 +418,9 @@ class AdvancedProductSelector:
                     'product_id': item_personalizado['id']
                 }
 
+        # Selecionar produtos de aquecimento
+        aquecimento = self._select_heating_products(conditions, dimensions, metrics)
+
         # ORDEM FILTRACAO
         filtracao_order = ['filter', 'valve', 'pump', 'vidro', 'quadro']
         def filtracao_sort_key(k):
@@ -505,11 +508,12 @@ class AdvancedProductSelector:
             'filtracao': 'Filtração',
             'recirculacao_iluminacao': 'Recirculação e Iluminação',
             'tratamento_agua': 'Tratamento de Água',
-            'revestimento': 'Revestimento'
+            'revestimento': 'Revestimento',
+            'aquecimento': 'Aquecimento'
         }
 
         # Para cada família interna, aplicar swap se necessário e manter a chave interna
-        for fam_name, fam_dict in [('filtracao', filtracao_sorted), ('recirculacao_iluminacao', recirculacao_sorted), ('tratamento_agua', tratamento_agua), ('revestimento', revestimento)]:
+        for fam_name, fam_dict in [('filtracao', filtracao_sorted), ('recirculacao_iluminacao', recirculacao_sorted), ('tratamento_agua', tratamento_agua), ('revestimento', revestimento), ('aquecimento', aquecimento)]:
             if fam_dict:
                 selected_key = None
                 previous_key = None
@@ -1472,3 +1476,164 @@ class AdvancedProductSelector:
             for s in similar:
                 print(f"   - {s}")
         return None
+
+    def _select_heating_products(self, conditions: Dict, dimensions: Dict, metrics: Dict) -> Dict:
+        """Seleciona produtos de aquecimento baseado no volume da piscina"""
+        aquecimento = {}
+        
+        # Obter volume da piscina
+        volume_m3 = dimensions.get('volume', 0) or metrics.get('volume', 0) or 0
+        
+        if volume_m3 <= 0:
+            return aquecimento
+        
+        # Buscar produtos da família Aquecimento
+        heating_products = self.db.get_products_by_family('Aquecimento')
+        
+        if not heating_products:
+            # Fallback para default_data se DB não tiver produtos
+            try:
+                from default_data import products, product_categories
+                aquecimento_cat = next((c for c in product_categories if c['name'] == 'Aquecimento'), None)
+                if aquecimento_cat:
+                    heating_products = []
+                    for prod in products:
+                        if prod.get('category_id') == 27 and prod.get('is_active', 1):  # ID 27 = Bomba de Calor
+                            prod_copy = prod.copy()
+                            prod_copy['category_name'] = 'Bomba de Calor'
+                            heating_products.append(prod_copy)
+            except ImportError:
+                return aquecimento
+        
+        # Filtrar produtos da categoria "Bomba de Calor"
+        heat_pumps = [p for p in heating_products if 'bomba de calor' in (p.get('category_name', '') or '').lower()]
+        
+        if not heat_pumps:
+            return aquecimento
+        
+        # Separar bombas por marca
+        mr_comfort_pumps = [p for p in heat_pumps if 'mr. comfort' in p.get('brand', '').lower()]
+        fairland_pumps = [p for p in heat_pumps if 'fairland' in p.get('brand', '').lower()]
+        
+        # Mapear produtos Mr. Comfort por volume ideal (preferência por eficiência)
+        mr_comfort_specs = [
+            {'model': '90M', 'kw': 9, 'min_volume': 20, 'max_volume': 50, 'optimal': 35},
+            {'model': '130M', 'kw': 12.6, 'min_volume': 30, 'max_volume': 60, 'optimal': 45},
+            {'model': '160M', 'kw': 16.1, 'min_volume': 40, 'max_volume': 75, 'optimal': 57.5},
+            {'model': '200M', 'kw': 20.0, 'min_volume': 50, 'max_volume': 90, 'optimal': 70},
+            {'model': '240M', 'kw': 24.0, 'min_volume': 60, 'max_volume': 110, 'optimal': 85}
+        ]
+        
+        # Mapear produtos Fairland InverX20 por volume ideal (gama superior)
+        fairland_specs = [
+            {'model': 'X20-14', 'kw': 14, 'min_volume': 30, 'max_volume': 50, 'optimal': 40},
+            {'model': 'X20-18', 'kw': 18, 'min_volume': 40, 'max_volume': 65, 'optimal': 52.5},
+            {'model': 'X20-22', 'kw': 22, 'min_volume': 45, 'max_volume': 75, 'optimal': 60},
+            {'model': 'X20-26', 'kw': 26, 'min_volume': 55, 'max_volume': 90, 'optimal': 72.5}
+        ]
+        
+        # Selecionar a bomba Mr. Comfort adequada (incluída por padrão)
+        selected_mr_comfort = None
+        selected_mr_spec = None
+        
+        # Encontrar todos os modelos Mr. Comfort válidos para o volume
+        valid_mr_specs = [spec for spec in mr_comfort_specs if spec['min_volume'] <= volume_m3 <= spec['max_volume']]
+        
+        if valid_mr_specs:
+            # Se há modelos válidos, escolher o mais próximo do volume ótimo
+            selected_mr_spec = min(valid_mr_specs, key=lambda x: abs(volume_m3 - x['optimal']))
+            selected_mr_comfort = next((p for p in mr_comfort_pumps if selected_mr_spec['model'] in p['name']), None)
+        else:
+            # Se não há modelos na faixa, escolher o mais próximo
+            if volume_m3 < 20:  # Muito baixo, selecionar o menor
+                selected_mr_spec = mr_comfort_specs[0]
+            elif volume_m3 > 110:  # Muito alto, selecionar o maior
+                selected_mr_spec = mr_comfort_specs[-1]
+            else:
+                # Encontrar o mais próximo baseado na distância dos limites
+                best_spec = None
+                min_distance = float('inf')
+                
+                for spec in mr_comfort_specs:
+                    # Calcular distância até a faixa de operação
+                    if volume_m3 < spec['min_volume']:
+                        distance = spec['min_volume'] - volume_m3
+                    else:  # volume_m3 > spec['max_volume']
+                        distance = volume_m3 - spec['max_volume']
+                    
+                    if distance < min_distance:
+                        min_distance = distance
+                        best_spec = spec
+                
+                selected_mr_spec = best_spec
+            
+            if selected_mr_spec:
+                selected_mr_comfort = next((p for p in mr_comfort_pumps if selected_mr_spec['model'] in p['name']), None)
+        
+        # Incluir a bomba Mr. Comfort selecionada
+        if selected_mr_comfort:
+            aquecimento[f"bomba_calor_{selected_mr_comfort['id']}"] = {
+                'name': selected_mr_comfort['name'],
+                'price': selected_mr_comfort['base_price'],
+                'quantity': 1,
+                'unit': selected_mr_comfort['unit'],
+                'item_type': 'incluido',
+                'reasoning': f'Bomba de calor selecionada para piscina de {volume_m3} m³',
+                'can_change_type': True,
+                'editable_price': False,
+                'editable_name': False
+            }
+        
+        # Selecionar bomba Fairland equivalente como opcional (gama superior)
+        selected_fairland = None
+        
+        # Encontrar bomba Fairland adequada baseada no volume
+        valid_fairland_specs = [spec for spec in fairland_specs if spec['min_volume'] <= volume_m3 <= spec['max_volume']]
+        
+        if valid_fairland_specs:
+            # Escolher a Fairland mais adequada para o volume
+            selected_fairland_spec = min(valid_fairland_specs, key=lambda x: abs(volume_m3 - x['optimal']))
+            selected_fairland = next((p for p in fairland_pumps if selected_fairland_spec['model'] in p['name']), None)
+        else:
+            # Fallback: se o volume está fora das faixas Fairland, escolher a mais próxima
+            if volume_m3 < 30:  # Menor que o mínimo Fairland
+                selected_fairland_spec = fairland_specs[0]  # X20-14
+            elif volume_m3 > 90:  # Maior que o máximo Fairland
+                selected_fairland_spec = fairland_specs[-1]  # X20-26
+            else:
+                # Encontrar a mais próxima
+                best_fairland_spec = None
+                min_distance = float('inf')
+                
+                for spec in fairland_specs:
+                    if volume_m3 < spec['min_volume']:
+                        distance = spec['min_volume'] - volume_m3
+                    else:  # volume_m3 > spec['max_volume']
+                        distance = volume_m3 - spec['max_volume']
+                    
+                    if distance < min_distance:
+                        min_distance = distance
+                        best_fairland_spec = spec
+                
+                selected_fairland_spec = best_fairland_spec
+            
+            if selected_fairland_spec:
+                selected_fairland = next((p for p in fairland_pumps if selected_fairland_spec['model'] in p['name']), None)
+        
+        # Incluir a bomba Fairland como alternativa (gama superior)
+        if selected_fairland and selected_mr_comfort:
+            main_mr_key = f"bomba_calor_{selected_mr_comfort['id']}"
+            aquecimento[f"bomba_calor_fairland_{selected_fairland['id']}"] = {
+                'name': selected_fairland['name'],
+                'price': selected_fairland['base_price'],
+                'quantity': 1,
+                'unit': selected_fairland['unit'],
+                'item_type': 'alternativo',
+                'alternative_to': main_mr_key,
+                'reasoning': f'Bomba de calor Fairland - Gama Superior alternativa para piscina de {volume_m3} m³',
+                'can_change_type': True,
+                'editable_price': False,
+                'editable_name': False
+            }
+        
+        return aquecimento

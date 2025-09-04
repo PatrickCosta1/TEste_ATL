@@ -1152,8 +1152,11 @@
                     </div>
                     
                     <div class="total-display">
-                        <div class="total-label">Total do Orçamento</div>
-                        <div class="total-amount">€{{ "%.2f"|format(budget.get('total_price', 0)) }}</div>
+                        <div class="total-label">Total do Orçamento (c/ IVA)</div>
+                        <div class="total-amount">€{{ "%.2f"|format(budget.get('total_with_iva', budget.get('total_price', 0))) }}</div>
+                        <div class="total-breakdown">
+                            <span class="total-before-iva">S/ IVA: €{{ "%.2f"|format(budget.get('subtotal_with_margin', budget.get('total_price', 0))) }}</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1360,7 +1363,7 @@
                                         </span>
                                     </div>
                                     <div class="ai-item">
-                                        <span class="label">Tratamento da Água</span>
+                                        <span class="label">Tratamento de Água</span>
                                         <span class="value value-treatment ai-item" style="padding: 3px 8px; border-radius:4px;border-left:3px solid blue;background:rgba(0, 123, 255, 0.1);">
                                             {% set tratamento = budget.pool_info.get('answers', {}).get('tratamento_agua', budget.pool_info.get('tratamento_agua', 'cloro_manual')) %}
                                             {% if tratamento == 'cloro_manual' %}Cloro Manual
@@ -1579,7 +1582,10 @@
             </div>
 
             <!-- Produtos por Família - DESIGN COMPACTO -->
-            {% for family_name, family_products in budget.get('families', {}).items() %}
+            {% set family_order = ['filtracao', 'recirculacao_iluminacao', 'tratamento_agua', 'revestimento', 'aquecimento'] %}
+            {% for family_name in family_order %}
+            {% if family_name in budget.get('families', {}) %}
+            {% set family_products = budget.get('families', {})[family_name] %}
             {# Check if this family has any displayable products #}
             {% set displayable_products = [] %}
             {% for product_id, product in family_products.items() %}
@@ -1678,8 +1684,11 @@
                         {% set _ = organized_products.append((product_id, product)) %}
                     {% endfor %}
                     
-                    {% for product_id, product in organized_products %}
-                    <div class="product-row-compact-detailed {{ 'alternative-product alternative-indented' if product.item_type == 'alternativo' else 'optional-product' if product.item_type == 'opcional' else '' }} {{ 'pack-item' if product.get('is_pack_item', False) else '' }}">
+                {% for product_id, product in organized_products %}
+                <div class="product-row-compact-detailed {{ 'alternative-product alternative-indented' if product.item_type == 'alternativo' else 'optional-product' if product.item_type == 'opcional' else '' }} {{ 'pack-item' if product.get('is_pack_item', False) else '' }}" 
+                    data-product-name="{{ product.name }}" 
+                    data-alternative-to="{{ product.get('alternative_to', '') }}" 
+                    data-product-id="{{ product_id }}">
                         <div class="product-info-left">
                             <span class="status-dot-compact {{ 'required' if product.item_type == 'incluido' else 'alternative' if product.item_type == 'alternativo' else 'optional' }}"></span>
                             <div class="product-name-section">
@@ -1812,9 +1821,10 @@
                 </div>
             </div>
             {% endif %}
+            {% endif %}
             {% endfor %}
 
-            <!-- Resumo Financeiro - Design Compacto -->
+            <!-- Resumo Financeiro - Design Compacto com IVA -->
             <div class="card slide-up financial-summary-compact">
                 <div class="financial-header-compact">
                     <i class="fas fa-calculator financial-icon-compact"></i>
@@ -1825,7 +1835,7 @@
                     <div class="financial-row">
                         <span class="financial-label">
                             <i class="fas fa-boxes"></i>
-                            Equipamentos
+                            Equipamentos (Base)
                         </span>
                         <span class="financial-value">{{ "%.2f"|format(budget.subtotal_base|default(0)) }}€</span>
                     </div>
@@ -1836,7 +1846,25 @@
                             Margem <span class="multiplier-tag">{{ "%.1f"|format(budget.pool_info.multiplier|default(1.0)) }}x</span>
                         </span>
                         <span class="financial-value multiplier-amount">
-                            +{{ "%.2f"|format((budget.total_price|default(0)) - (budget.subtotal_base|default(0))) }}€
+                            +{{ "%.2f"|format((budget.subtotal_with_margin|default(0)) - (budget.subtotal_base|default(0))) }}€
+                        </span>
+                    </div>
+                    
+                    <div class="financial-row subtotal-row">
+                        <span class="financial-label">
+                            <i class="fas fa-equals"></i>
+                            Subtotal (c/ Margem)
+                        </span>
+                        <span class="financial-value">{{ "%.2f"|format(budget.subtotal_with_margin|default(0)) }}€</span>
+                    </div>
+                    
+                    <div class="financial-row iva-row">
+                        <span class="financial-label">
+                            <i class="fas fa-receipt"></i>
+                            IVA <span class="iva-tag">{{ "%.0f"|format((budget.iva_rate|default(0.23)) * 100) }}%</span>
+                        </span>
+                        <span class="financial-value iva-amount">
+                            +{{ "%.2f"|format(budget.iva_amount|default(0)) }}€
                         </span>
                     </div>
                     
@@ -1845,9 +1873,9 @@
                     <div class="financial-row total-row">
                         <span class="financial-label-total">
                             <i class="fas fa-euro-sign"></i>
-                            Total do Orçamento
+                            Total do Orçamento (c/ IVA)
                         </span>
-                        <span class="financial-value-total">{{ "%.2f"|format(budget.total_price|default(0)) }}€</span>
+                        <span class="financial-value-total">{{ "%.2f"|format(budget.total_with_iva|default(0)) }}€</span>
                     </div>
                 </div>
             </div>
@@ -1979,6 +2007,16 @@
             font-weight: 700;
             color: var(--primary);
             line-height: 1;
+        }
+        
+        .total-breakdown {
+            margin-top: 0.5rem;
+        }
+        
+        .total-before-iva {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            font-weight: 500;
         }
         
         /* Pool Specifications */
@@ -2453,6 +2491,8 @@
             background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
             padding: 2px 6px;
             border-radius: 4px;
+            /* Garantir que unidades não sejam forçadas para maiúsculas por estilos herdados */
+            text-transform: lowercase;
         }
         
         .spec-qty {
@@ -3017,7 +3057,8 @@
         }
         
         .qty-input-compact {
-            width: 45px !important;
+            min-width: 45px;
+            width: auto;
             text-align: center;
             border: 2px solid #e2e8f0;
             border-radius: 8px;
@@ -3086,7 +3127,8 @@
         }
         
         .qty-input-small {
-            width: 28px !important;
+            min-width: 28px;
+            width: auto;
             text-align: center;
             border: 1px solid #d1d5db;
             border-radius: 4px;
@@ -3894,6 +3936,7 @@
             font-size: 0.75em;
             opacity: 0.8;
             margin-left: 2px;
+            
         }
         
         /* Configuração do Projeto - Cores por tipo */
@@ -5011,6 +5054,37 @@
             font-weight: 600;
             margin-left: 0.375rem;
         }
+        
+        .iva-tag {
+            background: linear-gradient(135deg, #059669, #047857);
+            color: white;
+            padding: 0.125rem 0.375rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-left: 0.375rem;
+        }
+        
+        .iva-row {
+            background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+            border-left: 3px solid #059669;
+            margin: 4px -8px;
+            padding: 8px 12px;
+            border-radius: 6px;
+        }
+        
+        .iva-amount {
+            color: #059669;
+            font-weight: 700;
+        }
+        
+        .subtotal-row {
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+            border-left: 3px solid #6b7280;
+            margin: 4px -8px;
+            padding: 8px 12px;
+            border-radius: 6px;
+        }
 
         .multiplier-amount {
             color: #059669;
@@ -5183,6 +5257,8 @@
             let newQty = parseInt(qtyInput.value) + change;
             if (newQty < 0) newQty = 0;  // Permitir quantidade 0 para produtos opcionais/alternativos
             qtyInput.value = newQty;
+            // Ajustar largura do input para o novo valor
+            adjustQtyWidth(qtyInput);
             updateProductQuantity(productId, newQty);
         }
 
@@ -5191,62 +5267,162 @@
             if (quantity === null || quantity === undefined || quantity === '') {
                 quantity = 0;
             }
-            
+
             // Permitir vírgula como separador decimal
             let quantityStr = String(quantity).replace(',', '.');
             const validQuantity = Math.max(0, parseFloat(quantityStr) || 0);  // Permitir decimais
-            
-            // Sincronizar quantidades dos produtos de cerâmica (102 e 103)
+
+            // Helper: detectar se um nome corresponde à "Chapa Colaminada" (case-insensitive)
+            function isChapaColaminada(name) {
+                return name && /chapa colaminada/i.test(name);
+            }
+
+            // Obter informação da linha atual (se existir)
+            const currentRow = document.querySelector(`[data-product-id="${productId}"]`);
+            const currentName = currentRow ? currentRow.getAttribute('data-product-name') : null;
+
+            // Tratar caso especial: produtos cerâmicos 102/103 (mantido para compatibilidade)
             if (productId === '102') {
-                // Se é o primeiro produto de cerâmica (impermeabilização), sincronizar com o segundo
                 const secondProduct = document.getElementById('qty_103');
                 if (secondProduct) {
                     secondProduct.value = validQuantity;
-                    // Atualizar também o segundo produto no servidor
                     fetch('/update_quantity', {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            product_id: '103',
-                            quantity: validQuantity
-                        })
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ product_id: '103', quantity: validQuantity })
                     });
                 }
             } else if (productId === '103') {
-                // Se é o segundo produto de cerâmica, sincronizar com o primeiro
                 const firstProduct = document.getElementById('qty_102');
                 if (firstProduct) {
                     firstProduct.value = validQuantity;
-                    // Atualizar também o primeiro produto no servidor
                     fetch('/update_quantity', {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            product_id: '102',
-                            quantity: validQuantity
-                        })
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ product_id: '102', quantity: validQuantity })
                     });
                 }
             }
-            
-            // Enviar atualização para o servidor
+
+            // Se o produto atual for Chapa Colaminada, forçar inteiro e sincronizar com o perfil principal
+            if (isChapaColaminada(currentName)) {
+                const intQty = Math.max(0, Math.round(validQuantity));
+                // Atualizar input visível
+                const input = document.getElementById('qty_' + productId);
+                if (input) input.value = intQty;
+
+                // Se este alternativo aponta para um produto principal, sincronizar o principal
+                const targetId = currentRow ? currentRow.getAttribute('data-alternative-to') : null;
+                if (targetId) {
+                    const mainInput = document.getElementById('qty_' + targetId);
+                    if (mainInput) {
+                        mainInput.value = intQty;
+                        // Atualizar principal no servidor
+                        fetch('/update_quantity', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ product_id: targetId, quantity: intQty })
+                        });
+                    }
+                }
+
+                // Enviar atualização do próprio item (Chapa Colaminada)
+                fetch('/update_quantity', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ product_id: productId, quantity: intQty })
+                }).then(() => location.reload());
+
+                return; // Já tratámos e sincronizámos
+            }
+
+            // Se o produto alterado for o produto principal, procurar alternativas do tipo Chapa Colaminada e sincronizar
+            const altRows = document.querySelectorAll(`[data-alternative-to="${productId}"]`);
+            if (altRows && altRows.length > 0) {
+                altRows.forEach(row => {
+                    const altName = row.getAttribute('data-product-name');
+                    if (isChapaColaminada(altName)) {
+                        const altId = row.getAttribute('data-product-id');
+                        const rounded = Math.max(0, Math.round(validQuantity));
+                        const altInput = document.getElementById('qty_' + altId);
+                        if (altInput) altInput.value = rounded;
+                        // Atualizar alternativa no servidor
+                        fetch('/update_quantity', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ product_id: altId, quantity: rounded })
+                        });
+                    }
+                });
+            }
+
+            // Enviar atualização para o servidor para o produto atual
             fetch('/update_quantity', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    product_id: productId,
-                    quantity: validQuantity
-                })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ product_id: productId, quantity: validQuantity })
             }).then(() => {
                 location.reload(); // Recarregar para atualizar preços
             });
         }
+
+        // Ajusta a largura de um input de quantidade para que o número nunca fique cortado
+        function adjustQtyWidth(input) {
+            try {
+                if (!input) return;
+                const value = String(input.value || input.placeholder || '');
+                const cs = window.getComputedStyle(input);
+                // Use a cached canvas for measurements
+                let canvas = adjustQtyWidth._canvas;
+                if (!canvas) {
+                    canvas = document.createElement('canvas');
+                    adjustQtyWidth._canvas = canvas;
+                }
+                const ctx = canvas.getContext('2d');
+                // Build a font string compatible with canvas
+                // Fallback to font-size + font-family if computed.font is not available
+                const font = cs.font || (cs.fontWeight + ' ' + cs.fontSize + ' ' + cs.fontFamily);
+                ctx.font = font;
+                const metrics = ctx.measureText(value || '0');
+                const textWidth = Math.ceil(metrics.width);
+                // calculate horizontal paddings/borders
+                const padLeft = parseFloat(cs.paddingLeft) || 0;
+                const padRight = parseFloat(cs.paddingRight) || 0;
+                const borderLeft = parseFloat(cs.borderLeftWidth) || 0;
+                const borderRight = parseFloat(cs.borderRightWidth) || 0;
+                const extra = 14; // extra spacing to avoid clipping
+                const minPx = 36; // slightly larger minimum
+                const maxPx = 260; // larger maximum to allow bigger counts
+
+                // If the input uses border-box, width already includes padding/border; otherwise add them
+                const boxSizing = cs.boxSizing || 'content-box';
+                let needed = textWidth + extra;
+                if (boxSizing === 'content-box') {
+                    needed += padLeft + padRight + borderLeft + borderRight;
+                }
+
+                const targetPx = Math.min(maxPx, Math.max(minPx, Math.ceil(needed)));
+                input.style.boxSizing = 'border-box';
+                input.style.minWidth = minPx + 'px';
+                input.style.width = targetPx + 'px';
+            } catch (e) {
+                // silently ignore measurement errors
+            }
+        }
+
+        // Inicializar listeners para ajustar larguras ao digitar e ao carregar
+        document.addEventListener('input', (e) => {
+            if (e.target && (e.target.classList && (e.target.classList.contains('qty-input-compact') || e.target.classList.contains('qty-input-small')))) {
+                adjustQtyWidth(e.target);
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Delay a bit to let fonts render so canvas measurements are accurate
+            setTimeout(() => {
+                document.querySelectorAll('.qty-input-compact, .qty-input-small').forEach(inp => adjustQtyWidth(inp));
+            }, 120);
+        });
 
         // Função para alternar produtos opcionais (incluir/excluir)
         // Função para incluir produto opcional no orçamento
@@ -5856,13 +6032,15 @@
                 /* Close button (keeps previous polished look) */
                 #addProductModal .add-product-modal-footer .modal-close-btn {
                     margin-left: auto !important;
-                    padding: 0.62rem 1.05rem !important;
+                    padding: 1.3rem 2.5rem !important;
                     border-radius: 12px !important;
                     background: linear-gradient(90deg,#ef4444,#dc2626) !important;
                     color: #fff !important;
                     box-shadow: 0 10px 26px rgba(220,38,38,0.07) !important;
                     z-index: 60 !important;
                     font-weight: 700 !important;
+                    border:none;
+                    transition: 0.2s ease-in-out;
                 }
 
                 #addProductModal .add-product-modal-footer .modal-close-btn:hover {
@@ -5899,6 +6077,7 @@
             const familyIcons = {
                 'Filtração': 'fa-filter',
                 'Recirculação e Iluminação': 'fa-water',
+                'Tratamento de Água': 'fa-flask',
                 'Aquecimento': 'fa-thermometer-half',
                 'Iluminação': 'fa-lightbulb',
                 'Automação': 'fa-robot',
@@ -6161,7 +6340,7 @@
                                                     <div class="product-actions">
                                                         <button class="product-action-btn include" onclick="addProductToQuote(${p.id}, 'incluido')">Incluir</button>
                                                         <button class="product-action-btn optional" onclick="addProductToQuote(${p.id}, 'opcional')">Opcional</button>
-                                                        <button class="product-action-btn alternative" onclick="showAlternativeSelection(${p.id})">Alternativo</button>
+                                                        <button class="product-action-btn alternative" onclick="showAlternativeSelection(${p.id}, '${p.family_name || familyName}')">Alternativo</button>
                                                     </div>
                                                 </div>
                                             </div>
@@ -6211,13 +6390,16 @@
         }
 
         function backToFamilies() {
-            const familyDiv = document.getElementById('familySelection');
-            const productDiv = document.getElementById('productSelection');
-            const backButton = document.getElementById('modalBackButton');
+            const modal = document.getElementById('addProductModal');
+            if (!modal) return;
             
-            familyDiv.style.display = 'block';
-            productDiv.style.display = 'none';
-            backButton.style.display = 'none';
+            const familyDiv = modal.querySelector('#familyCardsArea');
+            const productDiv = modal.querySelector('#productSelection');
+            const backButton = modal.querySelector('#modalBackButton');
+            
+            if (familyDiv) familyDiv.style.display = 'block';
+            if (productDiv) productDiv.style.display = 'none';
+            if (backButton) backButton.style.display = 'none';
         }
 
         function closeAddProductModal() {
@@ -6230,57 +6412,341 @@
             }
         }
 
-        function showAlternativeSelection(productId) {
-            // Buscar produtos já incluídos no orçamento
-            const includedProducts = collectIncludedProducts();
+        function showAlternativeSelection(productId, productFamily) {
+            // Debug: mostrar a família que estamos procurando
+            console.log('Procurando produtos da família:', productFamily);
+            
+            // Buscar produtos já incluídos no orçamento da mesma família
+            const includedProducts = collectIncludedProducts(productFamily);
             
             if (includedProducts.length === 0) {
-                alert('❌ Não há produtos incluídos no orçamento para associar como alternativo. Adicione primeiro alguns produtos como incluídos.');
+                // Debug adicional: mostrar todas as famílias disponíveis
+                const allProducts = collectIncludedProducts();
+                const availableFamilies = [...new Set(allProducts.map(p => p.family))];
+                console.log('Famílias disponíveis:', availableFamilies);
+                
+                alert(`❌ Não há produtos incluídos da família "${productFamily}" no orçamento para associar como alternativo. Adicione primeiro alguns produtos desta família como incluídos.\n\nFamílias disponíveis: ${availableFamilies.join(', ')}`);
                 return;
             }
             
-            // Criar modal de seleção
+            // Criar modal de seleção moderno
             const modal = document.createElement('div');
-            modal.className = 'edit-modal-overlay';
+            modal.className = 'alternative-modal-overlay';
             modal.innerHTML = `
-                <div class="edit-modal alternative-modal">
-                    <div class="edit-modal-header">
-                        <h3><i class="fas fa-exchange-alt"></i> Selecionar Produto Principal</h3>
-                        <button onclick="closeModal()" class="close-btn">&times;</button>
+                <div class="alternative-modal-container">
+                    <div class="alternative-modal-header">
+                        <div class="header-content">
+                            <div class="header-icon">
+                                <i class="fas fa-exchange-alt"></i>
+                            </div>
+                            <div class="header-text">
+                                <h3>Selecionar Produto Principal</h3>
+                                <p>Escolha qual produto da família "${productFamily}" será o principal</p>
+                            </div>
+                        </div>
+                        <button onclick="closeAlternativeModal()" class="modal-close-btn">
+                            <i class="fas fa-times"></i>
+                        </button>
                     </div>
-                    <div class="edit-modal-body">
-                        <p class="modal-description">
-                            <i class="fas fa-info-circle"></i>
-                            Selecione a qual produto incluído este produto será uma alternativa:
-                        </p>
-                        <div class="products-list">
+                    <div class="alternative-modal-body">
+                        <div class="products-grid">
                             ${includedProducts.map(product => `
-                                <div class="product-option" onclick="selectMainProduct('${productId}', '${product.id}')">
-                                    <div class="product-info">
-                                        <div class="product-name">${product.name}</div>
-                                        <div class="product-family">${product.family}</div>
+                                <div class="alternative-product-card" onclick="selectMainProduct('${productId}', '${product.id}')">
+                                    <div class="product-card-content">
+                                        <div class="product-icon">
+                                            <i class="fas fa-box"></i>
+                                        </div>
+                                        <div class="product-details">
+                                            <div class="product-name">${product.name}</div>
+                                            <div class="product-meta">
+                                                <span class="product-family">${product.family}</span>
+                                                <span class="product-qty">Qtd: ${product.quantity}</span>
+                                            </div>
+                                        </div>
+                                        <div class="product-price-badge">
+                                            ${product.price}
+                                        </div>
                                     </div>
-                                    <div class="product-price">${product.price}</div>
-                                    <i class="fas fa-chevron-right"></i>
+                                    <div class="selection-arrow">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </div>
                                 </div>
                             `).join('')}
                         </div>
                     </div>
-                    <div class="edit-modal-footer">
-                        <button onclick="closeModal()" class="btn btn-secondary">Cancelar</button>
+                    <div class="alternative-modal-footer">
+                        <button onclick="closeAlternativeModal()" class="btn-cancel">
+                            <i class="fas fa-times-circle"></i>
+                            Cancelar
+                        </button>
                     </div>
                 </div>
             `;
+            
+            // Adicionar estilos modernos para o modal
+            if (!document.getElementById('alternativeModalStyles')) {
+                const styles = document.createElement('style');
+                styles.id = 'alternativeModalStyles';
+                styles.innerHTML = `
+                    .alternative-modal-overlay {
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        width: 100%;
+                        height: 100%;
+                        background: rgba(15, 23, 42, 0.6);
+                        backdrop-filter: blur(8px);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        z-index: 10000;
+                        animation: fadeIn 0.3s ease;
+                    }
+                    
+                    @keyframes fadeIn {
+                        from { opacity: 0; }
+                        to { opacity: 1; }
+                    }
+                    
+                    @keyframes fadeOut {
+                        from { opacity: 1; }
+                        to { opacity: 0; }
+                    }
+                    
+                    .alternative-modal-container {
+                        background: linear-gradient(180deg, #ffffff, #fbfdff);
+                        border-radius: 20px;
+                        box-shadow: 0 25px 50px rgba(15, 23, 42, 0.15);
+                        max-width: 600px;
+                        width: 90%;
+                        max-height: 80vh;
+                        overflow: hidden;
+                        animation: slideUp 0.3s ease;
+                    }
+                    
+                    @keyframes slideUp {
+                        from { transform: translateY(20px); opacity: 0; }
+                        to { transform: translateY(0); opacity: 1; }
+                    }
+                    
+                    .alternative-modal-header {
+                        display: flex;
+                        align-items: center;
+                        justify-content: space-between;
+                        padding: 24px 28px;
+                        background: linear-gradient(135deg, #2563eb, #1e40af);
+                        color: white;
+                    }
+                    
+                    .header-content {
+                        display: flex;
+                        align-items: center;
+                        gap: 16px;
+                    }
+                    
+                    .header-icon {
+                        width: 48px;
+                        height: 48px;
+                        background: rgba(255, 255, 255, 0.2);
+                        border-radius: 12px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 20px;
+                    }
+                    
+                    .header-text h3 {
+                        margin: 0;
+                        font-size: 20px;
+                        font-weight: 700;
+                    }
+                    
+                    .header-text p {
+                        margin: 4px 0 0 0;
+                        font-size: 14px;
+                        opacity: 0.9;
+                    }
+                    
+                    .modal-close-btn {
+                        width: 40px;
+                        height: 40px;
+                        border: none;
+                        background: rgba(255, 255, 255, 0.2);
+                        color: white;
+                        border-radius: 10px;
+                        cursor: pointer;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        transition: all 0.2s ease;
+                    }
+                    
+                    .modal-close-btn:hover {
+                        background: rgba(255, 255, 255, 0.3);
+                        transform: scale(1.05);
+                    }
+                    
+                    .alternative-modal-body {
+                        padding: 24px 28px;
+                        max-height: 400px;
+                        overflow-y: auto;
+                    }
+                    
+                    .products-grid {
+                        display: grid;
+                        gap: 12px;
+                    }
+                    
+                    .alternative-product-card {
+                        display: flex;
+                        align-items: center;
+                        justify-content: space-between;
+                        padding: 16px 20px;
+                        background: linear-gradient(180deg, #ffffff, #f8fafc);
+                        border: 2px solid #e2e8f0;
+                        border-radius: 16px;
+                        cursor: pointer;
+                        transition: all 0.2s ease;
+                    }
+                    
+                    .alternative-product-card:hover {
+                        border-color: #2563eb;
+                        transform: translateY(-2px);
+                        box-shadow: 0 12px 24px rgba(37, 99, 235, 0.15);
+                    }
+                    
+                    .product-card-content {
+                        display: flex;
+                        align-items: center;
+                        gap: 16px;
+                        flex: 1;
+                    }
+                    
+                    .product-icon {
+                        width: 44px;
+                        height: 44px;
+                        background: linear-gradient(135deg, #eef6ff, #dbeafe);
+                        border-radius: 12px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        color: #2563eb;
+                        font-size: 18px;
+                    }
+                    
+                    .product-details {
+                        flex: 1;
+                    }
+                    
+                    .product-name {
+                        font-weight: 700;
+                        color: #0f172a;
+                        font-size: 16px;
+                        margin-bottom: 4px;
+                    }
+                    
+                    .product-meta {
+                        display: flex;
+                        align-items: center;
+                        gap: 12px;
+                        font-size: 13px;
+                        color: #64748b;
+                    }
+                    
+                    .product-family {
+                        background: #f1f5f9;
+                        padding: 4px 8px;
+                        border-radius: 6px;
+                        font-weight: 500;
+                    }
+                    
+                    .product-qty {
+                        font-weight: 600;
+                    }
+                    
+                    .product-price-badge {
+                        background: linear-gradient(135deg, #10b981, #059669);
+                        color: white;
+                        padding: 8px 12px;
+                        border-radius: 10px;
+                        font-weight: 700;
+                        font-size: 14px;
+                    }
+                    
+                    .selection-arrow {
+                        color: #94a3b8;
+                        font-size: 18px;
+                        transition: all 0.2s ease;
+                    }
+                    
+                    .alternative-product-card:hover .selection-arrow {
+                        color: #2563eb;
+                        transform: translateX(4px);
+                    }
+                    
+                    .alternative-modal-footer {
+                        padding: 20px 28px;
+                        background: #f8fafc;
+                        border-top: 1px solid #e2e8f0;
+                        display: flex;
+                        justify-content: center;
+                    }
+                    
+                    .btn-cancel {
+                        padding: 12px 24px;
+                        background: linear-gradient(135deg, #6b7280, #4b5563);
+                        color: white;
+                        border: none;
+                        border-radius: 12px;
+                        cursor: pointer;
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                        font-weight: 600;
+                        transition: all 0.2s ease;
+                    }
+                    
+                    .btn-cancel:hover {
+                        transform: translateY(-2px);
+                        box-shadow: 0 8px 20px rgba(107, 114, 128, 0.3);
+                    }
+                `;
+                document.head.appendChild(styles);
+            }
+            
             document.body.appendChild(modal);
         }
         
-        // Função para coletar produtos já incluídos no orçamento
-        function collectIncludedProducts() {
+        // Função para coletar produtos já incluídos no orçamento (opcionalmente filtrados por família)
+        function collectIncludedProducts(familyFilter = null) {
             const products = [];
+            
+            // Normalizar nome da família para comparação
+            const normalizeFamily = (name) => {
+                return name.toLowerCase()
+                    .normalize('NFD')
+                    .replace(/[\u0300-\u036f]/g, '') // Remove acentos
+                    .replace(/[^a-z0-9]/g, ' ')       // Substitui caracteres especiais por espaços
+                    .replace(/\s+/g, ' ')             // Remove espaços duplos
+                    .trim();
+            };
+            
+            const normalizedFilter = familyFilter ? normalizeFamily(familyFilter) : null;
             
             // Percorrer todas as famílias e coletar produtos incluídos
             document.querySelectorAll('.family-card-compact').forEach(familyCard => {
                 const familyName = familyCard.querySelector('.family-title-compact')?.textContent.trim() || 'Família';
+                const normalizedFamilyName = normalizeFamily(familyName);
+                
+                // Debug: mostrar comparação de nomes
+                if (familyFilter) {
+                    console.log(`Comparando: "${normalizedFamilyName}" com "${normalizedFilter}"`);
+                }
+                
+                // Se há filtro de família, aplicar comparação flexível
+                if (familyFilter && normalizedFamilyName !== normalizedFilter) {
+                    return;
+                }
                 
                 familyCard.querySelectorAll('.product-row-compact-detailed').forEach(productRow => {
                     // Verificar se é produto incluído (não alternativo)
@@ -6321,14 +6787,24 @@
             });
             
             // Debug: mostrar produtos encontrados
-            console.log('Produtos incluídos encontrados:', products);
+            console.log('Produtos incluídos encontrados' + (familyFilter ? ` da família "${familyFilter}"` : '') + ':', products);
             
             return products;
         }
         
+        function closeAlternativeModal() {
+            const modal = document.querySelector('.alternative-modal-overlay');
+            if (modal) {
+                modal.style.animation = 'fadeOut 0.3s ease';
+                setTimeout(() => {
+                    modal.remove();
+                }, 300);
+            }
+        }
+        
         // Função para selecionar produto principal e adicionar alternativo
         function selectMainProduct(alternativeProductId, mainProductId) {
-            closeModal();
+            closeAlternativeModal();
             
             // Mostrar loading
             const loadingDiv = document.createElement('div');
@@ -6701,14 +7177,14 @@
                             </div>
                         </div>
                         
-                        <!-- Seção 7: Tratamento da Água -->
+                        <!-- Seção 7: Tratamento de Água -->
                         <div class="config-section premium-section">
                             <div class="section-title">
                                 <i class="fas fa-tint section-icon"></i>
-                                <h4>Tratamento da Água</h4>
+                                <h4>Tratamento de Água</h4>
                             </div>
                             <div class="form-group premium-field">
-                                <label>Que tipo de tratamento da água pretende?</label>
+                                <label>Que tipo de tratamento de água pretende?</label>
                                 <div class="radio-group-premium">
                                     <div class="radio-option-premium ${currentAnswers.tratamento_agua === 'cloro_manual' ? 'selected' : ''}" data-value="cloro_manual">
                                         <i class="fas fa-hand-paper" style="color: var(--success);"></i>
@@ -7272,7 +7748,7 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>Tratamento da Água</label>
+                            <label>Tratamento de Água</label>
                             <select id="edit-treatment">
                                 <option value="cloro_manual">Cloro Manual</option>
                                 <option value="cloro_automatico">Cloro Automático</option>

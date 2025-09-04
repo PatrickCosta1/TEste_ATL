@@ -1,0 +1,334 @@
+{
+  "pool_info": {
+    "dimensions": {
+      "comprimento": 8,
+      "largura": 4,
+      "profundidade_media": 1.6,
+      "volume": 50
+    },
+    "metrics": {
+      "prof_media": 1.4,
+      "volume": 44.8,
+      "m3_h": 11.2,
+      "m3_massa": 13.63,
+      "m2_fundo": 33.0,
+      "m2_paredes": 33.6,
+      "m2_tela": 72.6,
+      "ml_bordadura": 26.0,
+      "rolos_tl": 2,
+      "rolos_3d": 3
+    },
+    "answers": {
+      "localizacao": "exterior",
+      "domotica": false,
+      "tipo_piscina": "skimmer",
+      "revestimento": "tela",
+      "luz": "monofasica",
+      "aquecimento": "bomba_calor",
+      "tratamento_agua": "nao"
+    },
+    "multiplier": 1.05,
+    "multiplier_breakdown": {
+      "geometrico": 1.0,
+      "acesso": 1.0,
+      "tecnologico": 1.0,
+      "mercado": 1.05,
+      "final": 1.05
+    }
+  },
+  "client_data": {},
+  "families": {
+    "filtracao": {
+      "filter_01_3": {
+        "name": "Filtro Aster Astralpool - D.600 14m3/h",
+        "price": 676,
+        "quantity": 1,
+        "unit": "un",
+        "item_type": "incluido",
+        "reasoning": "Filtro selecionado para piscina exterior com capacidade 11.2 m³/h",
+        "can_change_type": true,
+        "product_id": 3
+      },
+      "valve_01_100": {
+        "name": "Válvula Selectora Manual",
+        "price": 99,
+        "quantity": 1,
+        "unit": "un",
+        "item_type": "incluido",
+        "reasoning": "Válvula manual padrão",
+        "can_change_type": true,
+        "product_id": 100
+      },
+      "valve_02_101": {
+        "name": "Válvula Selectora Automatica - iWash by aquark (ALTERNATIVO)",
+        "price": 999,
+        "quantity": 1,
+        "unit": "un",
+        "item_type": "alternativo",
+        "reasoning": "Upgrade automático alternativo",
+        "can_change_type": true,
+        "product_id": 101,
+        "alternative_to": "valve_01_100"
+      },
+      "pump_01_13": {
+        "name": "Bomba de filtração Vitoria Plus Silent Astralpool - 1,0HP(M) 16m3/h",
+        "price": 555,
+        "quantity": 1,
+        "unit": "un",
+        "item_type": "incluido",
+        "reasoning": "Bomba padrão: 16m³/h (monofasica)",
+        "can_change_type": true,
+        "product_id": 13
+      },
+      "pump_02_8": {
+        "name": "Bomba filtração Velocidade Variável InverEco 1.0HP(M) 16m3 By Aquark (ALTERNATIVO)",
+        "price": 890,
+        "quantity": 1,
+        "unit": "un",
+        "item_type": "alternativo",
+        "reasoning": "Eficiência energética: 16m³/h (velocidade variável)",
+        "can_change_type": true,
+        "product_id": 8,
+        "alternative_to": "pump_01_13"
+      },
+      "vidro_fino_23_filter_01_3": {
+        "name": "Vidro granulado ionizado ativado - granulometria 0,4-1,0mm (Sacos de 20kg)",
+        "price": 29.9,
+        "quantity": 4,
+        "unit": "saco",
+        "item_type": "incluido",
+        "reasoning": "Vidro filtrante fino: 4 sacos (70% do total de vidro)",
+        "can_change_type": false,
+        "product_id": 23
+      },
+      "vidro_grosso_24_filter_01_3": {
+        "name": "Vidro granulado ionizado ativado - granulometria 1,5-3,0mm (Sacos de 20kg)",
+        "price": 29.9,
+        "quantity": 2,
+        "unit": "saco",
+        "item_type": "incluido",
+        "reasoning": "Vidro filtrante grosso: 2 sacos (30% do total de vidro)",
+        "can_change_type": false,
+        "product_id": 24
+      },
+      "areia_fina_74_filter_01_3": {
+        "name": "Areia Sílica 0,6-1,2mm (25kg)",
+        "price": 7.5,
+        "quantity": 4,
+        "unit": "saco",
+        "item_type": "alternativo",
+        "reasoning": "Alternativa ao vidro filtrante fino: 4 sacos (areia fina)",
+        "alternative_to": "vidro_fino_23_filter_01_3",
+        "can_change_type": false,
+        "product_id": 74
+      },
+      "areia_grossa_75_filter_01_3": {
+        "name": "Areia Sílica Grossa (25kg)",
+        "price": 7.5,
+        "quantity": 2,
+        "unit": "saco",
+        "item_type": "alternativo",
+        "reasoning": "Alternativa ao vidro filtrante grosso: 2 sacos (areia grossa)",
+        "alternative_to": "vidro_grosso_24_filter_01_3",
+        "can_change_type": false,
+        "product_id": 75
+      }
+    },
+    "recirculacao_iluminacao": {
+      "skimmer_35": {
+        "name": "Skimmer Linha de água Branco Liner",
+        "price": 210,
+        "quantity": 2,
+        "unit": "un",
+        "item_type": "incluido",
+        "reasoning": "Skimmers para piscina skimmer 4m de largura",
+        "can_change_type": true
+      },
+      "boca_impulsao_43": {
+        "name": "Boca de Impulsão de parede Astralpool Liner",
+        "price": 14.25,
+        "quantity": 3,
+        "unit": "un",
+        "item_type": "incluido",
+        "reasoning": "Bocas de impulsão para piscina 4m de largura",
+        "can_change_type": true
+      },
+      "tomada_aspiracao_51": {
+        "name": "Tomada de Aspiração Astralpool Liner",
+        "price": 23.3,
+        "quantity": 1,
+        "unit": "un",
+        "item_type": "incluido",
+        "reasoning": "Tomada de aspiração padrão",
+        "can_change_type": true
+      },
+      "passamuros_54": {
+        "name": "Passamuros Astralpool Liner",
+        "price": 13.9,
+        "quantity": 4,
+        "unit": "un",
+        "item_type": "incluido",
+        "reasoning": "Passamuros para instalação (4 unidades)",
+        "can_change_type": true
+      },
+      "regulador_nivel_58": {
+        "name": "Regulador de Nível Astralpool",
+        "price": 199,
+        "quantity": 1,
+        "unit": "un",
+        "item_type": "incluido",
+        "reasoning": "Regulador de nível para piscina skimmer",
+        "can_change_type": true
+      },
+      "regulador_pack_boca_43": {
+        "name": "    [Pack] Boca de Impulsão de parede Astralpool Liner (Pack Regulador)",
+        "price": 14.25,
+        "quantity": 1,
+        "unit": "un",
+        "item_type": "incluido",
+        "reasoning": "Boca impulsão adicional para regulador de nível",
+        "can_change_type": false,
+        "pack_parent": "regulador_nivel_58",
+        "is_pack_item": true,
+        "pack_style": "indented"
+      },
+      "regulador_pack_passamuro_54": {
+        "name": "    [Pack] Passamuros Astralpool Liner (Pack Regulador)",
+        "price": 13.9,
+        "quantity": 1,
+        "unit": "un",
+        "item_type": "incluido",
+        "reasoning": "Passamuro adicional para regulador de nível",
+        "can_change_type": false,
+        "pack_parent": "regulador_nivel_58",
+        "is_pack_item": true,
+        "pack_style": "indented"
+      },
+      "ralo_fundo_60": {
+        "name": "Ralo de fundo Kripsol Liner",
+        "price": 46.35,
+        "quantity": 1,
+        "unit": "un",
+        "item_type": "incluido",
+        "reasoning": "Ralo de fundo para piscina 32.0m² (tela)",
+        "can_change_type": true
+      },
+      "iluminacao_66": {
+        "name": "Projector Led Luz Branca de 100mm",
+        "price": 343,
+        "quantity": 3,
+        "unit": "un",
+        "item_type": "incluido",
+        "reasoning": "Iluminação para piscina 8x4m (branco_frio)",
+        "can_change_type": true
+      }
+    },
+    "tratamento_agua": {
+      "sal_granulado_refinado": {
+        "name": "Sal Granulado Refinado",
+        "price": 9.9,
+        "quantity": 12,
+        "unit": "un",
+        "item_type": "incluido",
+        "reasoning": "Quantidade calculada para 50 m³ de piscina",
+        "can_change_type": false
+      }
+    },
+    "revestimento": {
+      "tela_armada": {
+        "name": "Revestimento Tela Armada 3D Unicolor CGT",
+        "price": 1799.8,
+        "quantity": 2,
+        "unit": "Vg",
+        "item_type": "incluido",
+        "reasoning": "Quantidade calculada: 2 rolos de 25m cada",
+        "can_change_type": true,
+        "alternatives": [
+          {
+            "id": 95,
+            "name": "Revestimento Tela Armada 3D CGT",
+            "price": 2428.8
+          },
+          {
+            "id": 96,
+            "name": "Revestimento Tela Armada Lisa CGT",
+            "price": 1760
+          }
+        ],
+        "product_id": 94
+      },
+      "perfil": {
+        "name": "Perfil Horizontal de Fixação (2ml)",
+        "price": 5.25,
+        "quantity": 13,
+        "unit": "un",
+        "item_type": "incluido",
+        "reasoning": "Perfil horizontal: 13 un (2ml cada)",
+        "can_change_type": true,
+        "alternatives": [
+          {
+            "id": 99,
+            "name": "Chapa Colaminada",
+            "price": 7.5
+          }
+        ],
+        "product_id": 97
+      },
+      "chapa_colaminada": {
+        "name": "Chapa Colaminada",
+        "price": 7.5,
+        "quantity": 13,
+        "unit": "un",
+        "item_type": "alternativo",
+        "reasoning": "Alternativa à horizontal: 13 un (2ml cada)",
+        "alternative_to": "perfil",
+        "can_change_type": false,
+        "product_id": 99
+      }
+    },
+    "aquecimento": {
+      "bomba_calor_105": {
+        "name": "Mr. Comfort 130M (12.6kW, 30-60m3)",
+        "price": 2386.35,
+        "quantity": 1,
+        "unit": "UN",
+        "item_type": "incluido",
+        "reasoning": "Bomba de calor 12.6kW selecionada para 50m³ (volume + 15% margem: 57.5m³)",
+        "can_change_type": true,
+        "alternatives": [
+          {
+            "id": 106,
+            "name": "Mr. Comfort 160M (16.1kW, 40-75m3)",
+            "price": 3054.52
+          },
+          {
+            "id": 107,
+            "name": "Mr. Comfort 200M (20.0kW, 50-90m3)",
+            "price": 3627.26
+          },
+          {
+            "id": 104,
+            "name": "Mr. Comfort 90M (9kW, 20-50m3)",
+            "price": 1813.62
+          }
+        ],
+        "product_id": 105
+      }
+    }
+  },
+  "family_totals": {
+    "filtracao": 1584.87,
+    "recirculacao_iluminacao": 1936.36,
+    "tratamento_agua": 124.74,
+    "revestimento": 3851.24,
+    "aquecimento": 2505.67
+  },
+  "total_price": 10002.88,
+  "family_display_map": {
+    "filtracao": "Filtração",
+    "recirculacao_iluminacao": "Recirculação e Iluminação",
+    "tratamento_agua": "Tratamento de Água",
+    "revestimento": "Revestimento",
+    "aquecimento": "Aquecimento"
+  }
+}

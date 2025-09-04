@@ -7,7 +7,7 @@ def main():
     print('=== TESTANDO ALTERNATIVAS PARA PRODUTOS DE RECIRCULAÇÃO ===')
     
     # Buscar produtos da família recirculação
-    family_name = 'Recirculação e Iluminação - Encastráveis Tanque Piscina'
+    family_name = 'Recirculação e Iluminação'
     products = db.get_products_by_family(family_name)
     
     print(f'Total de produtos encontrados na família "{family_name}": {len(products)}')
