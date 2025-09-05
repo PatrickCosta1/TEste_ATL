@@ -23,7 +23,9 @@ def family_display_name(family_name):
         'filtracao': 'Filtração',
         'recirculacao_iluminacao': 'Recirculação e Iluminação',
         'tratamento_agua': 'Tratamento de Água',
-        'revestimento': 'Revestimento'
+        'revestimento': 'Revestimento',
+        'aquecimento': 'Aquecimento',
+        'construcao': 'Construção da Piscina'
     }
     return family_display_names.get(family_name, family_name.title())
 
@@ -661,14 +663,25 @@ def update_quantity():
                 
                 # Recalcular totais usando a nova função
                 calculate_and_update_totals(budget)
-            
+
+            # Atualizar valores agregados
             budget['total_price'] = sum(budget['family_totals'].values())
+            # Garantir que cálculos de IVA e subtotais estejam atualizados
+            # calculate_and_update_totals já atualiza subtotal_with_margin e total_with_iva
             session['current_budget'] = budget
             
-            return jsonify({
+            # Preparar payload com totais detalhados para atualização dinâmica no frontend
+            response_payload = {
                 'success': True,
-                'new_total': budget['total_price']
-            })
+                'total_price': budget.get('total_price', 0),
+                'subtotal_with_margin': budget.get('subtotal_with_margin', 0),
+                'total_with_iva': budget.get('total_with_iva', 0),
+                'iva_amount': budget.get('iva_amount', 0),
+                'family_totals': budget.get('family_totals', {}),
+                'family_totals_base': budget.get('family_totals_base', {})
+            }
+
+            return jsonify(response_payload)
         else:
             return jsonify({
                 'success': False,

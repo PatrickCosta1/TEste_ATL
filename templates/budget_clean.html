@@ -1592,7 +1592,7 @@
             </div>
 
             <!-- Produtos por Família - DESIGN COMPACTO -->
-            {% set family_order = ['filtracao', 'recirculacao_iluminacao', 'tratamento_agua', 'revestimento', 'aquecimento'] %}
+            {% set family_order = ['filtracao', 'recirculacao_iluminacao', 'tratamento_agua', 'revestimento', 'aquecimento', 'construcao'] %}
             {% for family_name in family_order %}
             {% if family_name in budget.get('families', {}) %}
             {% set family_products = budget.get('families', {})[family_name] %}
@@ -1618,6 +1618,7 @@
                             {% elif family_name == 'automacao' %}fa-robot
                             {% elif family_name == 'acessorios' %}fa-wrench
                             {% elif family_name == 'recirculacao_iluminacao' %}fa-water
+                            {% elif family_name == 'construcao' %}fa-hammer
                             {% else %}fa-cog{% endif %}"></i>
                         {{ family_name|family_display_name }}
                     </div>
@@ -1699,6 +1700,7 @@
                     data-product-name="{{ product.name }}" 
                     data-alternative-to="{{ product.get('alternative_to', '') }}" 
                     data-product-id="{{ product_id }}">
+                    {% set is_int_qty = (product.quantity == product.quantity|int) %}
                         <div class="product-info-left">
                             <span class="status-dot-compact {{ 'required' if product.item_type == 'incluido' else 'alternative' if product.item_type == 'alternativo' else 'optional' }}"></span>
                             <div class="product-name-section">
@@ -1717,10 +1719,10 @@
                                         {{ product.name }}
                                         {% endif %}
                                         <!-- Botão para alternativas inline com o texto -->
-                                        {% if product.get('can_change_type', False) and product.item_type != 'alternativo' %}
-                                        <button class="btn-alternative-inline" onclick="showAlternatives('{{ family_name }}', '{{ product_id }}')" 
-                                                title="Ver alternativas disponíveis">🔄</button>
-                                        {% endif %}
+                    {% if product.get('can_change_type', False) and product.item_type != 'alternativo' and family_name != 'construcao' %}
+                    <button class="btn-alternative-inline" onclick="showAlternatives('{{ family_name }}', '{{ product_id }}')" 
+                        title="Ver alternativas disponíveis">🔄</button>
+                    {% endif %}
                                     </span>
                                 </div>
                                 <div class="product-specs">
@@ -1736,7 +1738,7 @@
                                     {% else %}
                                     <span class="spec-price">{{ "%.2f"|format(product.price) }}€/{{ product.get('unit', 'un') }}</span>
                                     {% endif %}
-                                    <span class="spec-qty">Qtd: {{ product.quantity }}</span>
+                                    <span class="spec-qty">Qtd: {% if is_int_qty %}{{ product.quantity|int }}{% else %}{{ "%.2f"|format(product.quantity) }}{% endif %}</span>
                                 </div>
                             </div>
                         </div>
@@ -1746,9 +1748,9 @@
                                 <span class="price-total-compact">{{ "%.2f"|format(product.price * product.quantity) }}€</span>
                                 <div class="qty-controls-compact">
                                     <button class="qty-btn-compact" onclick="changeQuantity('{{ product_id }}', -1)">−</button>
-                                    <input type="number" class="qty-input-compact" step="0.01"
+                                    <input type="number" class="qty-input-compact" step="{% if is_int_qty %}1{% else %}0.01{% endif %}"
                                            id="qty_{{ product_id }}" 
-                                           value="{{ product.quantity }}" 
+                                           value="{% if is_int_qty %}{{ product.quantity|int }}{% else %}{{ "%.2f"|format(product.quantity) }}{% endif %}" 
                                            onchange="updateProductQuantity('{{ product_id }}', this.value)" min="0.01">
                                     <button class="qty-btn-compact" onclick="changeQuantity('{{ product_id }}', 1)">+</button>
                                 </div>
@@ -1767,10 +1769,10 @@
                                 <!-- Controles sempre visíveis para produtos alternativos -->
                                 <div class="qty-controls-small">
                                     <button class="qty-btn-small" onclick="changeQuantity('{{ product_id }}', -1)">−</button>
-                                    <input type="number" class="qty-input-small" step="0.01"
-                                           id="qty_{{ product_id }}" 
-                                           value="{{ product.quantity }}" 
-                                           onchange="updateProductQuantity('{{ product_id }}', this.value)" min="0">
+                     <input type="number" class="qty-input-small" step="{% if is_int_qty %}1{% else %}0.01{% endif %}"
+                         id="qty_{{ product_id }}" 
+                         value="{% if is_int_qty %}{{ product.quantity|int }}{% else %}{{ "%.2f"|format(product.quantity) }}{% endif %}" 
+                         onchange="updateProductQuantity('{{ product_id }}', this.value)" min="0">
                                     <button class="qty-btn-small" onclick="changeQuantity('{{ product_id }}', 1)">+</button>
                                 </div>
                                 
@@ -1791,10 +1793,10 @@
                                 <!-- Controles sempre visíveis para produtos opcionais -->
                                 <div class="qty-controls-small">
                                     <button class="qty-btn-small" onclick="changeQuantity('{{ product_id }}', -1)">−</button>
-                                    <input type="number" class="qty-input-small" step="0.01"
-                                           id="qty_{{ product_id }}" 
-                                           value="{{ product.quantity }}" 
-                                           onchange="updateProductQuantity('{{ product_id }}', this.value)" min="0">
+                     <input type="number" class="qty-input-small" step="{% if is_int_qty %}1{% else %}0.01{% endif %}"
+                         id="qty_{{ product_id }}" 
+                         value="{% if is_int_qty %}{{ product.quantity|int }}{% else %}{{ "%.2f"|format(product.quantity) }}{% endif %}" 
+                         onchange="updateProductQuantity('{{ product_id }}', this.value)" min="0">
                                     <button class="qty-btn-small" onclick="changeQuantity('{{ product_id }}', 1)">+</button>
                                 </div>
                                 
@@ -1810,10 +1812,10 @@
                                 <span class="price-total-compact">{{ "%.2f"|format(product.price * product.quantity) }}€</span>
                                 <div class="qty-controls-compact">
                                     <button class="qty-btn-compact" onclick="changeQuantity('{{ product_id }}', -1)">-</button>
-                                    <input type="number" class="qty-input-compact" step="0.01"
-                                           id="qty_{{ product_id }}" 
-                                           value="{{ product.quantity }}" 
-                                           onchange="updateProductQuantity('{{ product_id }}', this.value)" min="0.01">
+                     <input type="number" class="qty-input-compact" step="{% if is_int_qty %}1{% else %}0.01{% endif %}"
+                         id="qty_{{ product_id }}" 
+                         value="{% if is_int_qty %}{{ product.quantity|int }}{% else %}{{ "%.2f"|format(product.quantity) }}{% endif %}" 
+                         onchange="updateProductQuantity('{{ product_id }}', this.value)" min="0.01">
                                     <button class="qty-btn-compact" onclick="changeQuantity('{{ product_id }}', 1)">+</button>
                                 </div>
                                 <button class="btn-toggle-optional active" 
@@ -5341,7 +5343,13 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ product_id: productId, quantity: intQty })
-                }).then(() => location.reload());
+                }).then(resp => resp.json()).then(data => {
+                    if (data && data.success) {
+                        applyBudgetTotalsToDOM(data);
+                    } else {
+                        location.reload();
+                    }
+                }).catch(() => location.reload());
 
                 return; // Já tratámos e sincronizámos
             }
@@ -5371,8 +5379,15 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ product_id: productId, quantity: validQuantity })
-            }).then(() => {
-                location.reload(); // Recarregar para atualizar preços
+            }).then(resp => resp.json()).then(data => {
+                if (data && data.success) {
+                    applyBudgetTotalsToDOM(data);
+                } else {
+                    // Fallback para reload caso haja erro
+                    location.reload();
+                }
+            }).catch(() => {
+                location.reload();
             });
         }
 
@@ -5400,7 +5415,7 @@
                 const padRight = parseFloat(cs.paddingRight) || 0;
                 const borderLeft = parseFloat(cs.borderLeftWidth) || 0;
                 const borderRight = parseFloat(cs.borderRightWidth) || 0;
-                const extra = 14; // extra spacing to avoid clipping
+                const extra = 30; // extra spacing to avoid clipping
                 const minPx = 36; // slightly larger minimum
                 const maxPx = 260; // larger maximum to allow bigger counts
 
@@ -5433,6 +5448,87 @@
                 document.querySelectorAll('.qty-input-compact, .qty-input-small').forEach(inp => adjustQtyWidth(inp));
             }, 120);
         });
+
+        // Aplica os totais retornados pelo servidor na DOM sem recarregar
+        function applyBudgetTotalsToDOM(data) {
+            try {
+                // Atualizar totais por família (base)
+                const familyBases = data.family_totals_base || {};
+                Object.keys(familyBases).forEach(fam => {
+                    const container = document.getElementById('products-' + fam);
+                    if (container) {
+                        // header é o elemento anterior ao container
+                        const header = container.previousElementSibling;
+                        if (header) {
+                            const totalSpan = header.querySelector('.total-compact');
+                            if (totalSpan) {
+                                totalSpan.textContent = (parseFloat(familyBases[fam]) || 0).toFixed(2) + '€';
+                            }
+                        }
+                    }
+                });
+
+                // Atualizar totals gerais
+                const totalWithIva = parseFloat(data.total_with_iva || 0).toFixed(2);
+                const subtotal = parseFloat(data.subtotal_with_margin || data.total_price || 0).toFixed(2);
+                const totalElem = document.querySelector('.total-amount');
+                const subtotalElem = document.querySelector('.total-before-iva');
+                if (totalElem) totalElem.textContent = '€' + totalWithIva;
+                if (subtotalElem) subtotalElem.textContent = 'S/ IVA: €' + subtotal;
+
+                // Atualizar preços parciais por item (price * quantity)
+                document.querySelectorAll('[data-product-id]').forEach(row => {
+                    try {
+                        const pid = row.getAttribute('data-product-id');
+                        // Encontrar input de quantidade
+                        const qtyInput = document.getElementById('qty_' + pid);
+                        const qty = qtyInput ? parseFloat(String(qtyInput.value).replace(',', '.')) || 0 : 0;
+                        // Tentar obter preço unitário: primeiro editable-price data, senão parse spec-price
+                        let unitPrice = null;
+                        const editable = row.querySelector('.editable-price');
+                        if (editable && editable.dataset && editable.dataset.originalPrice) {
+                            unitPrice = parseFloat(editable.dataset.originalprice || editable.dataset.originalPrice || editable.textContent) || null;
+                        }
+                        if (unitPrice === null) {
+                            const spec = row.querySelector('.spec-price');
+                            if (spec) {
+                                // Extrair primeiro número encontrado
+                                const m = spec.textContent.match(/\d+[\.,]?\d*/);
+                                if (m) unitPrice = parseFloat(m[0].replace(',', '.')) || 0;
+                            }
+                        }
+                        if (unitPrice !== null) {
+                            const partial = (unitPrice * qty) || 0;
+                            const partialElem = row.querySelector('.price-total-compact');
+                            if (partialElem) partialElem.textContent = partial.toFixed(2) + '€';
+                        }
+
+                        // Atualizar badge de quantidade (spec-qty)
+                        const specQty = row.querySelector('.spec-qty');
+                        if (specQty) {
+                            try {
+                                specQty.textContent = 'Qtd: ' + qty.toFixed(2);
+                            } catch (e) {
+                                specQty.textContent = 'Qtd: ' + String(qty);
+                            }
+                        }
+                    } catch (e) {
+                        // ignore per-item errors
+                    }
+                });
+
+                // Opcional: mostrar notificação rápida
+                const notif = document.createElement('div');
+                notif.style.cssText = 'position:fixed;top:18px;right:18px;background:#059669;color:#fff;padding:10px 14px;border-radius:8px;z-index:1200;box-shadow:0 6px 18px rgba(0,0,0,0.15);font-weight:700;';
+                notif.textContent = 'Quantidade atualizada';
+                document.body.appendChild(notif);
+                setTimeout(() => notif.remove(), 1200);
+            } catch (e) {
+                // Fallback: recarregar se algo falhar
+                console.error('Erro ao aplicar totais na DOM:', e);
+                location.reload();
+            }
+        }
 
         // Função para alternar produtos opcionais (incluir/excluir)
         // Função para incluir produto opcional no orçamento

@@ -1648,15 +1648,22 @@ class AdvancedProductSelector:
         
         construcao = {}
         
-        # Obter localidade do cliente
-        client_data = {}
-        if session:
-            budget = session.get('current_budget', {})
-            client_data = budget.get('client_data', {})
+        # Obter localidade dos answers primeiro, depois client_data como fallback
+        localidade = answers.get('localidade', '')
+        if not localidade:
+            client_data = {}
+            if session:
+                budget = session.get('current_budget', {})
+                client_data = budget.get('client_data', {})
+            localidade = client_data.get('localidade', '')
         
-        localidade = client_data.get('localidade', '')
         if localidade == 'Outro':
-            localidade = client_data.get('localidade_outro', '')
+            localidade_outro = answers.get('localidade_outro', '')
+            if not localidade_outro and session:
+                budget = session.get('current_budget', {})
+                client_data = budget.get('client_data', {})
+                localidade_outro = client_data.get('localidade_outro', '')
+            localidade = localidade_outro
         
         # Mapeamento de localidades para regiões de preços
         regiao_precos = {
@@ -1715,10 +1722,10 @@ class AdvancedProductSelector:
                 'Viga': 3.75, 'Abobadilhas 40cm': 0.68
             },
             'Braga': {
-                'Bloco Cofragem 50x20x20': 1.32, 'Bloco Normal 50x20x20': 1.10, 'Cimento Cimpor 32,5R': 3.78,
-                'Malha Eletrosoldada 6mm': 3.39, 'Heliaço 10mm 6m': 3.80, 'Meia Areia': 35.00,
-                'Mistura': 35.00, 'Brita nº2': 35.00, 'Reboco Exterior Cinza': 2.08,
-                'Viga': 3.75, 'Abobadilhas 40cm': 0.68
+                'Bloco Cofragem 50x20x20': 1.13, 'Bloco Normal 50x20x20': 0.89, 'Cimento Cimpor 32,5R': 3.90,
+                'Malha Eletrosoldada 6mm': 3.36, 'Heliaço 10mm 6m': 4.50, 'Meia Areia': 27.50,
+                'Mistura': 27.50, 'Brita nº2': 27.50, 'Reboco Exterior Cinza': 2.92,
+                'Viga': 3.25, 'Abobadilhas 40cm': 0.73
             },
             'Guimarães': {
                 'Bloco Cofragem 50x20x20': 1.08, 'Bloco Normal 50x20x20': 0.95, 'Cimento Cimpor 32,5R': 4.01,
