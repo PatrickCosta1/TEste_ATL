@@ -37,14 +37,14 @@ class PoolCalculator:
         m3_h = volume / 4
         results['m3_h'] = round(m3_h, 2)
         
-        # C5 = +(((C3+0,03)*(D3+0,3))*0,2)+E5*0,2 - m3 massa
-        # Nota: E5 será calculado primeiro
+        # C5 = ((C3+0.4)*(D3+0.4))*0.15 + m2paredes*0.16 - m3 massa (atualizado conforme pedido)
+        # Nota: E5 (m2_paredes) será calculado primeiro
         m2_paredes = (comprimento * 2 + largura * 2) * prof_media
-        m3_massa = (((comprimento + 0.03) * (largura + 0.3)) * 0.2) + (m2_paredes * 0.2)
+        m3_massa = (((comprimento + 0.4) * (largura + 0.4)) * 0.15) + (m2_paredes * 0.16)
         results['m3_massa'] = round(m3_massa, 2)
         
-        # D5 = +(C3/1,6)*D3*1,65 - m2 fundo  
-        m2_fundo = (comprimento / 1.6) * largura * 1.65
+        # D5 = (C3+0.4)*(D3+0.4) - m2 fundo (atualizado conforme pedido)
+        m2_fundo = (comprimento + 0.4) * (largura + 0.4)
         results['m2_fundo'] = round(m2_fundo, 2)
         
         # E5 = +(C3*2+D3*2)*G3 - m2 paredes

@@ -1142,6 +1142,16 @@
                                 <i class="fas fa-calendar"></i>
                                 {{ budget.get('client_data', {}).get('date', '') }}
                             </span>
+                            {% if budget.get('client_data', {}).get('localidade') %}
+                            <span class="localidade">
+                                <i class="fas fa-map-marker-alt"></i>
+                                {% if budget.get('client_data', {}).get('localidade') == 'Outro' %}
+                                    {{ budget.get('client_data', {}).get('localidade_outro', 'Localidade não especificada') }}
+                                {% else %}
+                                    {{ budget.get('client_data', {}).get('localidade') }}
+                                {% endif %}
+                            </span>
+                            {% endif %}
                             {% if budget.get('client_data', {}).get('commercialName') %}
                             <span class="commercial-name">
                                 <i class="fas fa-user-tie"></i>
@@ -6977,6 +6987,78 @@
                             </div>
                         </div>
                         
+                        <!-- Seção 1.5: Elementos Adicionais -->
+                        <div class="config-section premium-section">
+                            <div class="section-title">
+                                <i class="fas fa-plus-circle section-icon"></i>
+                                <h4>Elementos Adicionais</h4>
+                            </div>
+                            <div class="premium-grid">
+                                <!-- Zona de Praia -->
+                                <div class="form-group premium-field">
+                                    <label>Há zona de praia?</label>
+                                    <div class="radio-group-premium">
+                                        <div class="radio-option-premium ${currentAnswers.zona_praia === 'sim' ? 'selected' : ''}" data-value="sim">
+                                            <i class="fas fa-umbrella-beach" style="color: var(--success);"></i>
+                                            <span>Sim</span>
+                                        </div>
+                                        <div class="radio-option-premium ${currentAnswers.zona_praia === 'nao' ? 'selected' : ''}" data-value="nao">
+                                            <i class="fas fa-times-circle" style="color: var(--text-muted);"></i>
+                                            <span>Não</span>
+                                        </div>
+                                    </div>
+                                    <input type="hidden" id="edit-zona-praia" value="${currentAnswers.zona_praia || 'nao'}" />
+                                    
+                                    <!-- Campos condicionais para zona de praia -->
+                                    <div id="edit-zona-praia-campos" style="display: ${currentAnswers.zona_praia === 'sim' ? 'block' : 'none'}; margin-top: 12px;">
+                                        <div class="premium-grid" style="grid-template-columns: 1fr 1fr;">
+                                            <div class="form-group premium-field">
+                                                <label>Largura da Zona de Praia</label>
+                                                <div class="input-wrapper">
+                                                    <input type="number" id="edit-zona-praia-largura" value="${currentAnswers.zona_praia_largura || ''}" step="0.01" />
+                                                    <span class="input-unit">m</span>
+                                                </div>
+                                            </div>
+                                            <div class="form-group premium-field">
+                                                <label>Comprimento da Zona de Praia</label>
+                                                <div class="input-wrapper">
+                                                    <input type="number" id="edit-zona-praia-comprimento" value="${currentAnswers.zona_praia_comprimento || ''}" step="0.01" />
+                                                    <span class="input-unit">m</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Escadas -->
+                                <div class="form-group premium-field">
+                                    <label>Há escadas?</label>
+                                    <div class="radio-group-premium">
+                                        <div class="radio-option-premium ${currentAnswers.escadas === 'sim' ? 'selected' : ''}" data-value="sim">
+                                            <i class="fas fa-sort-amount-up" style="color: var(--success);"></i>
+                                            <span>Sim</span>
+                                        </div>
+                                        <div class="radio-option-premium ${currentAnswers.escadas === 'nao' ? 'selected' : ''}" data-value="nao">
+                                            <i class="fas fa-times-circle" style="color: var(--text-muted);"></i>
+                                            <span>Não</span>
+                                        </div>
+                                    </div>
+                                    <input type="hidden" id="edit-escadas" value="${currentAnswers.escadas || 'nao'}" />
+                                    
+                                    <!-- Campo condicional para escadas -->
+                                    <div id="edit-escadas-campos" style="display: ${currentAnswers.escadas === 'sim' ? 'block' : 'none'}; margin-top: 12px;">
+                                        <div class="form-group premium-field">
+                                            <label>Largura da Escada</label>
+                                            <div class="input-wrapper">
+                                                <input type="number" id="edit-escadas-largura" value="${currentAnswers.escadas_largura || ''}" step="0.01" />
+                                                <span class="input-unit">m</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <!-- Seção 2: Condições do Local -->
                         <div class="config-section premium-section">
                             <div class="section-title">
@@ -7348,6 +7430,38 @@
                                 }
                             }
                         }
+                        
+                        // Handle zona de praia sub-options visibility
+                        if (hiddenInput.id === 'edit-zona-praia') {
+                            const zonaPraiaCampos = document.getElementById('edit-zona-praia-campos');
+                            if (zonaPraiaCampos) {
+                                if (this.dataset.value === 'sim') {
+                                    zonaPraiaCampos.style.display = 'block';
+                                } else {
+                                    zonaPraiaCampos.style.display = 'none';
+                                    // Clear zona praia inputs
+                                    const larguraInput = document.getElementById('edit-zona-praia-largura');
+                                    const comprimentoInput = document.getElementById('edit-zona-praia-comprimento');
+                                    if (larguraInput) larguraInput.value = '';
+                                    if (comprimentoInput) comprimentoInput.value = '';
+                                }
+                            }
+                        }
+                        
+                        // Handle escadas sub-options visibility
+                        if (hiddenInput.id === 'edit-escadas') {
+                            const escadasCampos = document.getElementById('edit-escadas-campos');
+                            if (escadasCampos) {
+                                if (this.dataset.value === 'sim') {
+                                    escadasCampos.style.display = 'block';
+                                } else {
+                                    escadasCampos.style.display = 'none';
+                                    // Clear escadas input
+                                    const larguraInput = document.getElementById('edit-escadas-largura');
+                                    if (larguraInput) larguraInput.value = '';
+                                }
+                            }
+                        }
                     }
                 });
             });
@@ -7374,7 +7488,13 @@
                 tratamento_agua: document.getElementById('edit-tratamento-agua').value,
                 tipo_construcao: document.getElementById('edit-tipo-construcao').value,
                 cobertura: document.getElementById('edit-cobertura').value,
-                tipo_cobertura_laminas: document.getElementById('edit-tipo-cobertura-laminas').value
+                tipo_cobertura_laminas: document.getElementById('edit-tipo-cobertura-laminas').value,
+                // Zona de praia e escadas
+                zona_praia: document.getElementById('edit-zona-praia').value,
+                zona_praia_largura: document.getElementById('edit-zona-praia-largura') ? parseFloat(document.getElementById('edit-zona-praia-largura').value) || 0 : 0,
+                zona_praia_comprimento: document.getElementById('edit-zona-praia-comprimento') ? parseFloat(document.getElementById('edit-zona-praia-comprimento').value) || 0 : 0,
+                escadas: document.getElementById('edit-escadas').value,
+                escadas_largura: document.getElementById('edit-escadas-largura') ? parseFloat(document.getElementById('edit-escadas-largura').value) || 0 : 0
             };
 
             // Incluir casa das máquinas e tipo de luzes (idem questionário)
@@ -7434,36 +7554,118 @@
             const modal = document.createElement('div');
             modal.className = 'edit-modal-overlay';
             modal.innerHTML = `
-                <div class="edit-modal">
+                <div class="edit-modal" style="max-width: 600px;">
                     <div class="edit-modal-header">
                         <h3><i class="fas fa-user-edit"></i> Editar Dados do Cliente</h3>
                         <button onclick="closeModal()" class="close-btn">&times;</button>
                     </div>
                     <div class="edit-modal-body">
-                        <div class="form-group">
-                            <label>Nome do Cliente</label>
-                            <input type="text" id="edit-client-name" value="${clientName}" />
+                        <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                            <div class="form-group">
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #2c3e50;">
+                                    <i class="fas fa-user" style="margin-right: 0.5rem; color: #3498db;"></i>
+                                    Nome do Cliente
+                                </label>
+                                <input type="text" id="edit-client-name" value="${clientName}" 
+                                       style="width: 100%; padding: 0.75rem; border: 2px solid #e1e8ed; border-radius: 8px; font-size: 14px; transition: all 0.3s ease;"
+                                       onfocus="this.style.borderColor='#3498db'; this.style.boxShadow='0 0 0 3px rgba(52, 152, 219, 0.1)'"
+                                       onblur="this.style.borderColor='#e1e8ed'; this.style.boxShadow='none'" />
+                            </div>
+                            <div class="form-group">
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #2c3e50;">
+                                    <i class="fas fa-user-tie" style="margin-right: 0.5rem; color: #9b59b6;"></i>
+                                    Nome do Comercial
+                                </label>
+                                <input type="text" id="edit-commercial-name" value="${commercialName}" 
+                                       style="width: 100%; padding: 0.75rem; border: 2px solid #e1e8ed; border-radius: 8px; font-size: 14px; transition: all 0.3s ease;"
+                                       onfocus="this.style.borderColor='#9b59b6'; this.style.boxShadow='0 0 0 3px rgba(155, 89, 182, 0.1)'"
+                                       onblur="this.style.borderColor='#e1e8ed'; this.style.boxShadow='none'" />
+                            </div>
+                            <div class="form-group">
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #2c3e50;">
+                                    <i class="fas fa-hashtag" style="margin-right: 0.5rem; color: #e67e22;"></i>
+                                    Número da Proposta
+                                </label>
+                                <input type="text" id="edit-proposal-number" value="${proposalNumber}" 
+                                       style="width: 100%; padding: 0.75rem; border: 2px solid #e1e8ed; border-radius: 8px; font-size: 14px; transition: all 0.3s ease;"
+                                       onfocus="this.style.borderColor='#e67e22'; this.style.boxShadow='0 0 0 3px rgba(230, 126, 34, 0.1)'"
+                                       onblur="this.style.borderColor='#e1e8ed'; this.style.boxShadow='none'" />
+                            </div>
+                            <div class="form-group">
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #2c3e50;">
+                                    <i class="fas fa-calendar" style="margin-right: 0.5rem; color: #27ae60;"></i>
+                                    Data da Proposta
+                                </label>
+                                <input type="date" id="edit-client-date" value="${clientDate}" 
+                                       style="width: 100%; padding: 0.75rem; border: 2px solid #e1e8ed; border-radius: 8px; font-size: 14px; transition: all 0.3s ease;"
+                                       onfocus="this.style.borderColor='#27ae60'; this.style.boxShadow='0 0 0 3px rgba(39, 174, 96, 0.1)'"
+                                       onblur="this.style.borderColor='#e1e8ed'; this.style.boxShadow='none'" />
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label>Número da Proposta</label>
-                            <input type="text" id="edit-proposal-number" value="${proposalNumber}" />
-                        </div>
-                        <div class="form-group">
-                            <label>Data</label>
-                            <input type="date" id="edit-client-date" value="${clientDate}" />
-                        </div>
-                        <div class="form-group">
-                            <label>Nome do Comercial</label>
-                            <input type="text" id="edit-commercial-name" value="${commercialName}" />
+                        
+                        <div style="margin-top: 1.5rem;">
+                            <div class="form-group">
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #2c3e50;">
+                                    <i class="fas fa-map-marker-alt" style="margin-right: 0.5rem; color: #e74c3c;"></i>
+                                    Localidade
+                                </label>
+                                <select id="edit-localidade" 
+                                        style="width: 100%; padding: 0.75rem; border: 2px solid #e1e8ed; border-radius: 8px; font-size: 14px; transition: all 0.3s ease; background: white;"
+                                        onfocus="this.style.borderColor='#e74c3c'; this.style.boxShadow='0 0 0 3px rgba(231, 76, 60, 0.1)'"
+                                        onblur="this.style.borderColor='#e1e8ed'; this.style.boxShadow='none'"
+                                        onchange="toggleLocalidadeOutroEdit()">
+                                    <option value="">-- Selecionar Localidade --</option>
+                                    <option>Viseu</option>
+                                    <option>Ponte Lima</option>
+                                    <option>Barcelos</option>
+                                    <option>Santa Maria da Feira</option>
+                                    <option>Póvoa de Varzim/Vila do Conde</option>
+                                    <option>Viana do Castelo</option>
+                                    <option>Famalicão</option>
+                                    <option>Ovar/Estarreja</option>
+                                    <option>Gaia</option>
+                                    <option>Braga</option>
+                                    <option>Guimarães</option>
+                                    <option>Porto/Maia/Matosinhos</option>
+                                    <option value="Outro">Outro</option>
+                                </select>
+                                <input type="text" id="edit-localidade-outro" placeholder="Especifique outra localidade" 
+                                       style="width: 100%; padding: 0.75rem; border: 2px solid #e1e8ed; border-radius: 8px; font-size: 14px; margin-top: 0.5rem; display: none; transition: all 0.3s ease;"
+                                       onfocus="this.style.borderColor='#e74c3c'; this.style.boxShadow='0 0 0 3px rgba(231, 76, 60, 0.1)'"
+                                       onblur="this.style.borderColor='#e1e8ed'; this.style.boxShadow='none'" />
+                            </div>
+                            <div class="form-group">
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #2c3e50;">
+                                    <i class="fas fa-sticky-note" style="margin-right: 0.5rem; color: #f39c12;"></i>
+                                    Observações
+                                </label>
+                                <textarea id="edit-observations" rows="3" placeholder="Informações adicionais sobre o projeto..."
+                                          style="width: 100%; padding: 0.75rem; border: 2px solid #e1e8ed; border-radius: 8px; font-size: 14px; resize: vertical; transition: all 0.3s ease;"
+                                          onfocus="this.style.borderColor='#f39c12'; this.style.boxShadow='0 0 0 3px rgba(243, 156, 18, 0.1)'"
+                                          onblur="this.style.borderColor='#e1e8ed'; this.style.boxShadow='none'"></textarea>
+                            </div>
                         </div>
                     </div>
-                    <div class="edit-modal-footer">
-                        <button onclick="closeModal()" class="btn btn-secondary">Cancelar</button>
-                        <button onclick="saveClientInfo()" class="btn btn-primary">Salvar</button>
+                    <div class="edit-modal-footer" style="display: flex; justify-content: flex-end; gap: 1rem; padding: 1.5rem; border-top: 1px solid #e1e8ed;">
+                        <button onclick="closeModal()" class="btn btn-secondary" 
+                                style="padding: 0.75rem 1.5rem; border: 2px solid #95a5a6; background: transparent; color: #95a5a6; border-radius: 8px; font-weight: 600; transition: all 0.3s ease;"
+                                onmouseover="this.style.background='#95a5a6'; this.style.color='white'"
+                                onmouseout="this.style.background='transparent'; this.style.color='#95a5a6'">
+                            <i class="fas fa-times" style="margin-right: 0.5rem;"></i>Cancelar
+                        </button>
+                        <button onclick="saveClientInfo()" class="btn btn-primary"
+                                style="padding: 0.75rem 1.5rem; border: 2px solid #3498db; background: #3498db; color: white; border-radius: 8px; font-weight: 600; transition: all 0.3s ease;"
+                                onmouseover="this.style.background='#2980b9'; this.style.borderColor='#2980b9'"
+                                onmouseout="this.style.background='#3498db'; this.style.borderColor='#3498db'">
+                            <i class="fas fa-save" style="margin-right: 0.5rem;"></i>Salvar
+                        </button>
                     </div>
                 </div>
             `;
             document.body.appendChild(modal);
+            
+            // Carregar valores atuais da localidade e observações
+            loadCurrentClientData();
         }
 
         // Função para editar informações da piscina
@@ -7511,12 +7713,58 @@
             document.body.appendChild(modal);
         }
 
+        // Função para carregar dados atuais do cliente
+        function loadCurrentClientData() {
+            // Carregar localidade atual do backend ou template variables
+            fetch('/get_current_client_data')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const localidadeSelect = document.getElementById('edit-localidade');
+                        const localidadeOutro = document.getElementById('edit-localidade-outro');
+                        const observations = document.getElementById('edit-observations');
+                        
+                        if (data.client_data.localidade) {
+                            localidadeSelect.value = data.client_data.localidade;
+                            if (data.client_data.localidade === 'Outro' && data.client_data.localidade_outro) {
+                                localidadeOutro.style.display = 'block';
+                                localidadeOutro.value = data.client_data.localidade_outro;
+                            }
+                        }
+                        
+                        if (data.client_data.observations) {
+                            observations.value = data.client_data.observations;
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.log('Dados do cliente não encontrados, usando valores padrão');
+                });
+        }
+
+        // Função para alternar campo "Outro" da localidade
+        function toggleLocalidadeOutroEdit() {
+            const select = document.getElementById('edit-localidade');
+            const outroField = document.getElementById('edit-localidade-outro');
+            
+            if (select.value === 'Outro') {
+                outroField.style.display = 'block';
+                outroField.focus();
+            } else {
+                outroField.style.display = 'none';
+                outroField.value = '';
+            }
+        }
+
         // Função para salvar dados do cliente
         function saveClientInfo() {
             const clientName = document.getElementById('edit-client-name').value;
             const proposalNumber = document.getElementById('edit-proposal-number').value;
             const clientDate = document.getElementById('edit-client-date').value;
             const commercialName = document.getElementById('edit-commercial-name').value;
+            const localidade = document.getElementById('edit-localidade').value;
+            const localidadeOutro = document.getElementById('edit-localidade-outro').value;
+            const observations = document.getElementById('edit-observations').value;
             
             // Atualizar na interface
             const clientNameEl = document.querySelector('.client-name');
@@ -7531,8 +7779,34 @@
             const commercialEl = document.querySelector('.commercial-name');
             if (commercialEl && commercialName) commercialEl.innerHTML = `<i class="fas fa-user-tie"></i> ${commercialName}`;
             
+            // Salvar dados no backend
+            const formData = new FormData();
+            formData.append('clientName', clientName);
+            formData.append('proposalNumber', proposalNumber);
+            formData.append('date', clientDate);
+            formData.append('commercialName', commercialName);
+            formData.append('localidade', localidade);
+            formData.append('localidade_outro', localidadeOutro);
+            formData.append('observations', observations);
+            
+            fetch('/update_client_data', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showSuccessMessage('Dados do cliente atualizados com sucesso!');
+                } else {
+                    showErrorMessage('Erro ao atualizar dados do cliente: ' + (data.error || 'Erro desconhecido'));
+                }
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                showErrorMessage('Erro de conexão ao atualizar dados do cliente');
+            });
+            
             closeModal();
-            showSuccessMessage('Dados do cliente atualizados!');
         }
 
         // Função para salvar dados da piscina  

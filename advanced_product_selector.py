@@ -421,6 +421,9 @@ class AdvancedProductSelector:
         # Selecionar produtos de aquecimento
         aquecimento = self._select_heating_products(conditions, dimensions, metrics)
 
+        # Selecionar produtos de construção da piscina
+        construcao = self._select_construction_products(conditions, dimensions, metrics, answers)
+
         # ORDEM FILTRACAO
         filtracao_order = ['filter', 'valve', 'pump', 'vidro', 'quadro']
         def filtracao_sort_key(k):
@@ -509,11 +512,12 @@ class AdvancedProductSelector:
             'recirculacao_iluminacao': 'Recirculação e Iluminação',
             'tratamento_agua': 'Tratamento de Água',
             'revestimento': 'Revestimento',
-            'aquecimento': 'Aquecimento'
+            'aquecimento': 'Aquecimento',
+            'construcao': 'Construção da Piscina'
         }
 
         # Para cada família interna, aplicar swap se necessário e manter a chave interna
-        for fam_name, fam_dict in [('filtracao', filtracao_sorted), ('recirculacao_iluminacao', recirculacao_sorted), ('tratamento_agua', tratamento_agua), ('revestimento', revestimento), ('aquecimento', aquecimento)]:
+        for fam_name, fam_dict in [('filtracao', filtracao_sorted), ('recirculacao_iluminacao', recirculacao_sorted), ('tratamento_agua', tratamento_agua), ('revestimento', revestimento), ('aquecimento', aquecimento), ('construcao', construcao)]:
             if fam_dict:
                 selected_key = None
                 previous_key = None
@@ -1637,3 +1641,298 @@ class AdvancedProductSelector:
             }
         
         return aquecimento
+
+    def _select_construction_products(self, conditions: Dict, dimensions: Dict, metrics: Dict, answers: Dict) -> Dict:
+        """Seleciona produtos de construção da piscina com preços regionais"""
+        import math
+        
+        construcao = {}
+        
+        # Obter localidade do cliente
+        client_data = {}
+        if session:
+            budget = session.get('current_budget', {})
+            client_data = budget.get('client_data', {})
+        
+        localidade = client_data.get('localidade', '')
+        if localidade == 'Outro':
+            localidade = client_data.get('localidade_outro', '')
+        
+        # Mapeamento de localidades para regiões de preços
+        regiao_precos = {
+            'Viseu': {
+                'Bloco Cofragem 50x20x20': 0.90, 'Bloco Normal 50x20x20': 0.83, 'Cimento Cimpor 32,5R': 4.03,
+                'Malha Eletrosoldada 6mm': 2.96, 'Heliaço 10mm 6m': 3.28, 'Meia Areia': 25.00,
+                'Mistura': 22.00, 'Brita nº2': 28.70, 'Reboco Exterior Cinza': 2.60,
+                'Viga': 2.30, 'Abobadilhas 40cm': 0.71
+            },
+            'Ponte Lima': {
+                'Bloco Cofragem 50x20x20': 0.92, 'Bloco Normal 50x20x20': 0.88, 'Cimento Cimpor 32,5R': 3.85,
+                'Malha Eletrosoldada 6mm': 2.07, 'Heliaço 10mm 6m': 3.29, 'Meia Areia': 25.00,
+                'Mistura': 26.25, 'Brita nº2': 25.00, 'Reboco Exterior Cinza': 2.91,
+                'Viga': 2.08, 'Abobadilhas 40cm': 0.66
+            },
+            'Barcelos': {
+                'Bloco Cofragem 50x20x20': 0.85, 'Bloco Normal 50x20x20': 0.74, 'Cimento Cimpor 32,5R': 3.98,
+                'Malha Eletrosoldada 6mm': 1.90, 'Heliaço 10mm 6m': 2.94, 'Meia Areia': 24.39,
+                'Mistura': 32.52, 'Brita nº2': 24.39, 'Reboco Exterior Cinza': 2.85,
+                'Viga': 1.98, 'Abobadilhas 40cm': 0.63
+            },
+            'Santa Maria da Feira': {
+                'Bloco Cofragem 50x20x20': 1.12, 'Bloco Normal 50x20x20': 0.95, 'Cimento Cimpor 32,5R': 3.63,
+                'Malha Eletrosoldada 6mm': 2.66, 'Heliaço 10mm 6m': 3.30, 'Meia Areia': 34.00,
+                'Mistura': 31.00, 'Brita nº2': 31.00, 'Reboco Exterior Cinza': 2.30,
+                'Viga': 3.00, 'Abobadilhas 40cm': 0.60
+            },
+            'Póvoa de Varzim/Vila do Conde': {
+                'Bloco Cofragem 50x20x20': 1.09, 'Bloco Normal 50x20x20': 0.85, 'Cimento Cimpor 32,5R': 3.98,
+                'Malha Eletrosoldada 6mm': 2.78, 'Heliaço 10mm 6m': 3.77, 'Meia Areia': 27.14,
+                'Mistura': 27.14, 'Brita nº2': 27.14, 'Reboco Exterior Cinza': 2.70,
+                'Viga': 2.30, 'Abobadilhas 40cm': 0.71
+            },
+            'Viana do Castelo': {
+                'Bloco Cofragem 50x20x20': 1.05, 'Bloco Normal 50x20x20': 0.90, 'Cimento Cimpor 32,5R': 3.95,
+                'Malha Eletrosoldada 6mm': 2.27, 'Heliaço 10mm 6m': 3.70, 'Meia Areia': 26.00,
+                'Mistura': 33.50, 'Brita nº2': 26.00, 'Reboco Exterior Cinza': 3.00,
+                'Viga': 2.67, 'Abobadilhas 40cm': 0.58
+            },
+            'Famalicão': {
+                'Bloco Cofragem 50x20x20': 1.12, 'Bloco Normal 50x20x20': 0.98, 'Cimento Cimpor 32,5R': 3.62,
+                'Malha Eletrosoldada 6mm': 1.89, 'Heliaço 10mm 6m': 3.47, 'Meia Areia': 39.27,
+                'Mistura': 37.55, 'Brita nº2': 37.55, 'Reboco Exterior Cinza': 2.73,
+                'Viga': 2.30, 'Abobadilhas 40cm': 0.70
+            },
+            'Ovar/Estarreja': {
+                'Bloco Cofragem 50x20x20': 1.34, 'Bloco Normal 50x20x20': 1.10, 'Cimento Cimpor 32,5R': 3.84,
+                'Malha Eletrosoldada 6mm': 2.72, 'Heliaço 10mm 6m': 3.94, 'Meia Areia': 27.24,
+                'Mistura': 27.74, 'Brita nº2': 27.24, 'Reboco Exterior Cinza': 3.25,
+                'Viga': 3.00, 'Abobadilhas 40cm': 0.70
+            },
+            'Gaia': {
+                'Bloco Cofragem 50x20x20': 1.32, 'Bloco Normal 50x20x20': 1.10, 'Cimento Cimpor 32,5R': 3.78,
+                'Malha Eletrosoldada 6mm': 3.39, 'Heliaço 10mm 6m': 3.80, 'Meia Areia': 35.00,
+                'Mistura': 35.00, 'Brita nº2': 35.00, 'Reboco Exterior Cinza': 2.08,
+                'Viga': 3.75, 'Abobadilhas 40cm': 0.68
+            },
+            'Braga': {
+                'Bloco Cofragem 50x20x20': 1.32, 'Bloco Normal 50x20x20': 1.10, 'Cimento Cimpor 32,5R': 3.78,
+                'Malha Eletrosoldada 6mm': 3.39, 'Heliaço 10mm 6m': 3.80, 'Meia Areia': 35.00,
+                'Mistura': 35.00, 'Brita nº2': 35.00, 'Reboco Exterior Cinza': 2.08,
+                'Viga': 3.75, 'Abobadilhas 40cm': 0.68
+            },
+            'Guimarães': {
+                'Bloco Cofragem 50x20x20': 1.08, 'Bloco Normal 50x20x20': 0.95, 'Cimento Cimpor 32,5R': 4.01,
+                'Malha Eletrosoldada 6mm': 3.36, 'Heliaço 10mm 6m': 3.70, 'Meia Areia': 35.00,
+                'Mistura': 35.00, 'Brita nº2': 34.00, 'Reboco Exterior Cinza': 2.70,
+                'Viga': 2.30, 'Abobadilhas 40cm': 0.75
+            },
+            'Porto/Maia/Matosinhos': {
+                'Bloco Cofragem 50x20x20': 1.32, 'Bloco Normal 50x20x20': 1.10, 'Cimento Cimpor 32,5R': 3.78,
+                'Malha Eletrosoldada 6mm': 3.39, 'Heliaço 10mm 6m': 3.80, 'Meia Areia': 35.00,
+                'Mistura': 35.00, 'Brita nº2': 35.00, 'Reboco Exterior Cinza': 2.08,
+                'Viga': 3.75, 'Abobadilhas 40cm': 0.68
+            }
+        }
+        
+        # Obter preços para a localidade específica ou calcular média se for "Outro"
+        def get_price_for_region(product_name):
+            if localidade in regiao_precos:
+                return regiao_precos[localidade].get(product_name, 0)
+            else:
+                # Calcular média de todas as regiões
+                total = 0
+                count = 0
+                for region_prices in regiao_precos.values():
+                    if product_name in region_prices:
+                        total += region_prices[product_name]
+                        count += 1
+                return total / count if count > 0 else 0
+        
+        # Obter métricas calculadas
+        m2_paredes = metrics.get('m2_paredes', 0)
+        m2_fundo = metrics.get('m2_fundo', 0)
+        m3_massa = metrics.get('m3_massa', 0)
+        perimetro = metrics.get('perimetro', 0)
+        prof_min = dimensions.get('prof_min', 0)
+        prof_max = dimensions.get('prof_max', 0)
+        prof_media = (prof_min + prof_max) / 2 if prof_min and prof_max else 0
+        
+        # Zona de praia e escadas
+        zona_praia = answers.get('zona_praia', 'nao') == 'sim'
+        zona_praia_largura = answers.get('zona_praia_largura', 0)
+        zona_praia_comprimento = answers.get('zona_praia_comprimento', 0)
+        escadas = answers.get('escadas', 'nao') == 'sim'
+        escadas_largura = answers.get('escadas_largura', 0)
+        
+        # 1. Bloco Cofragem 50x20x20: 10 blocos por m² paredes (arredondar para cima)
+        if m2_paredes > 0:
+            qty_bloco_cofragem = math.ceil(m2_paredes * 10)
+            construcao['bloco_cofragem'] = {
+                'name': 'Bloco Cofragem 50x20x20',
+                'price': get_price_for_region('Bloco Cofragem 50x20x20'),
+                'quantity': qty_bloco_cofragem,
+                'unit': 'un',
+                'item_type': 'incluido',
+                'reasoning': f'10 blocos por m² de parede ({m2_paredes:.2f} m²)',
+                'can_change_type': True
+            }
+        
+        # 2. Bloco Normal 50x20x20: só se houver escadas
+        if escadas and escadas_largura > 0:
+            qty_bloco_normal = math.floor((escadas_largura / 0.2) * ((prof_min - 0.3) / 0.2))
+            if qty_bloco_normal > 0:
+                construcao['bloco_normal'] = {
+                    'name': 'Bloco Normal 50x20x20',
+                    'price': get_price_for_region('Bloco Normal 50x20x20'),
+                    'quantity': qty_bloco_normal,
+                    'unit': 'un',
+                    'item_type': 'incluido',
+                    'reasoning': f'Para escadas: ({escadas_largura}/0,2) × (({prof_min}-0,3)/0,2)',
+                    'can_change_type': True
+                }
+        
+        # 3. Cimento Cimpor 32,5R: 10 sacos por m³ massa
+        if m3_massa > 0:
+            qty_cimento = m3_massa * 10
+            construcao['cimento'] = {
+                'name': 'Cimento Cimpor 32,5R',
+                'price': get_price_for_region('Cimento Cimpor 32,5R'),
+                'quantity': qty_cimento,
+                'unit': 'un',
+                'item_type': 'incluido',
+                'reasoning': f'10 sacos por m³ de massa ({m3_massa:.2f} m³)',
+                'can_change_type': True
+            }
+        
+        # 4. Mistura: 1 m³ por m³ massa
+        if m3_massa > 0:
+            construcao['mistura'] = {
+                'name': 'Mistura',
+                'price': get_price_for_region('Mistura'),
+                'quantity': m3_massa,
+                'unit': 'm3',
+                'item_type': 'incluido',
+                'reasoning': f'1 m³ por m³ de massa ({m3_massa:.2f} m³)',
+                'can_change_type': True
+            }
+        
+        # 5. Malha Eletrosoldada 6mm: igual a m² paredes
+        if m2_paredes > 0:
+            construcao['malha_eletrosoldada'] = {
+                'name': 'Malha Eletrosoldada 6mm',
+                'price': get_price_for_region('Malha Eletrosoldada 6mm'),
+                'quantity': m2_paredes,
+                'unit': 'm2',
+                'item_type': 'incluido',
+                'reasoning': f'Igual a m² de paredes ({m2_paredes:.2f} m²)',
+                'can_change_type': True
+            }
+        
+        # 6. Heliaço 10mm 6m: Barras Verticais + Barras Horizontais
+        if perimetro > 0 and prof_max > 0:
+            # Barras Verticais: (Altura_2m × 2)/6, onde Altura_2m = (Perímetro/0,2)
+            altura_2m = perimetro / 0.2
+            barras_verticais = (altura_2m * 2) / 6
+            
+            # Barras Horizontais: (Nº_Fiadas × Perímetro × 2)/6, onde Nº_Fiadas = prof_max/0,2
+            n_fiadas = prof_max / 0.2
+            barras_horizontais = (n_fiadas * perimetro * 2) / 6
+            
+            qty_heliaco = math.ceil(barras_verticais + barras_horizontais)
+            construcao['heliaco'] = {
+                'name': 'Heliaço 10mm 6m',
+                'price': get_price_for_region('Heliaço 10mm 6m'),
+                'quantity': qty_heliaco,
+                'unit': 'un',
+                'item_type': 'incluido',
+                'reasoning': f'Barras verticais: {barras_verticais:.1f} + Barras horizontais: {barras_horizontais:.1f}',
+                'can_change_type': True
+            }
+        
+        # 7. Arame Queimado: sempre 2 kg
+        construcao['arame_queimado'] = {
+            'name': 'Arame Queimado',
+            'price': 2.50,  # Preço fixo
+            'quantity': 2,
+            'unit': 'kg',
+            'item_type': 'incluido',
+            'reasoning': 'Quantidade fixa: 2 kg',
+            'can_change_type': True
+        }
+        
+        # 8. Meia Areia: sempre 1 m³
+        construcao['meia_areia'] = {
+            'name': 'Meia Areia',
+            'price': get_price_for_region('Meia Areia'),
+            'quantity': 1,
+            'unit': 'm3',
+            'item_type': 'incluido',
+            'reasoning': 'Quantidade fixa: 1 m³',
+            'can_change_type': True
+        }
+        
+        # 9. Reboco Exterior: 0,6 sacos por m² parede
+        if m2_paredes > 0:
+            qty_reboco = m2_paredes * 0.6
+            construcao['reboco_exterior'] = {
+                'name': 'Reboco Exterior Cinza',
+                'price': get_price_for_region('Reboco Exterior Cinza'),
+                'quantity': qty_reboco,
+                'unit': 'un',
+                'item_type': 'incluido',
+                'reasoning': f'0,6 sacos por m² de parede ({m2_paredes:.2f} m²)',
+                'can_change_type': True
+            }
+        
+        # 10. Vigas: só se zona de praia
+        if zona_praia and zona_praia_largura > 0 and zona_praia_comprimento > 0:
+            n_vigas = ((zona_praia_comprimento / 0.52) + 1) * zona_praia_largura
+            construcao['vigas'] = {
+                'name': 'Viga',
+                'price': get_price_for_region('Viga'),
+                'quantity': n_vigas,
+                'unit': 'm',
+                'item_type': 'incluido',
+                'reasoning': f'Zona praia: (({zona_praia_comprimento}/0,52)+1) × {zona_praia_largura}',
+                'can_change_type': True
+            }
+            
+            # 11. Abobadilhas: só se zona de praia
+            qty_abobadilhas = (zona_praia_largura / 0.40) * n_vigas
+            construcao['abobadilhas'] = {
+                'name': 'Abobadilhas 40cm',
+                'price': get_price_for_region('Abobadilhas 40cm'),
+                'quantity': qty_abobadilhas,
+                'unit': 'un',
+                'item_type': 'incluido',
+                'reasoning': f'({zona_praia_largura}/0,40) × {n_vigas:.1f} vigas',
+                'can_change_type': True
+            }
+        
+        # 12. Tela Pitonada: perímetro × profundidade média
+        if perimetro > 0 and prof_media > 0:
+            qty_tela = perimetro * prof_media
+            construcao['tela_pitonada'] = {
+                'name': 'Tela Pitonada',
+                'price': 1.50,  # Preço fixo
+                'quantity': qty_tela,
+                'unit': 'm2',
+                'item_type': 'incluido',
+                'reasoning': f'Perímetro × prof. média: {perimetro:.2f} × {prof_media:.2f}',
+                'can_change_type': True
+            }
+        
+        # 13. Brita nº2: m² fundo × 0,05 (arredondar para cima)
+        if m2_fundo > 0:
+            qty_brita = math.ceil(m2_fundo * 0.05)
+            construcao['brita_n2'] = {
+                'name': 'Brita nº2',
+                'price': get_price_for_region('Brita nº2'),
+                'quantity': qty_brita,
+                'unit': 'm3',
+                'item_type': 'incluido',
+                'reasoning': f'M² fundo × 0,05: {m2_fundo:.2f} × 0,05 (arredondado)',
+                'can_change_type': True
+            }
+        
+        return construcao

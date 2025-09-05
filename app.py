@@ -231,7 +231,15 @@ def generate_budget():
             'tratamento_agua': data.get('tratamento_agua'),
             'tipo_construcao': data.get('tipo_construcao'),
             'cobertura': data.get('cobertura'),
-            'tipo_cobertura_laminas': data.get('tipo_cobertura_laminas')
+            'tipo_cobertura_laminas': data.get('tipo_cobertura_laminas'),
+            'casa_maquinas_abaixo': data.get('casa_maquinas_abaixo'),
+            'tipo_luzes': data.get('tipo_luzes'),
+            # ZONA DE PRAIA E ESCADAS
+            'zona_praia': data.get('zona_praia'),
+            'zona_praia_largura': float(data.get('zona_praia_largura', 0)) if data.get('zona_praia_largura') else 0,
+            'zona_praia_comprimento': float(data.get('zona_praia_comprimento', 0)) if data.get('zona_praia_comprimento') else 0,
+            'escadas': data.get('escadas'),
+            'escadas_largura': float(data.get('escadas_largura', 0)) if data.get('escadas_largura') else 0
         }
         
         print(f"DEBUG: Answers processadas: {answers}")
@@ -871,7 +879,13 @@ def get_current_answers():
                 'tipo_cobertura_laminas': pool_info.get('tipo_cobertura_laminas', ''),
                 'casa_maquinas_abaixo': pool_info.get('casa_maquinas_abaixo', 'nao'),
                 'casa_maquinas_desc': pool_info.get('casa_maquinas_desc', ''),
-                'tipo_luzes': pool_info.get('tipo_luzes', 'branco_frio')
+                'tipo_luzes': pool_info.get('tipo_luzes', 'branco_frio'),
+                # Zona de praia e escadas
+                'zona_praia': pool_info.get('zona_praia', 'nao'),
+                'zona_praia_largura': pool_info.get('zona_praia_largura', 0),
+                'zona_praia_comprimento': pool_info.get('zona_praia_comprimento', 0),
+                'escadas': pool_info.get('escadas', 'nao'),
+                'escadas_largura': pool_info.get('escadas_largura', 0)
             }
         
         return jsonify({
@@ -1817,6 +1831,70 @@ def restore_budget_state():
     except Exception as e:
         print(f"ERRO restore_budget_state: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 400
+
+@app.route('/get_current_client_data', methods=['GET'])
+def get_current_client_data():
+    """Retorna os dados atuais do cliente"""
+    try:
+        budget = session.get('current_budget', {})
+        client_data = budget.get('client_data', {})
+        
+        return jsonify({
+            'success': True,
+            'client_data': {
+                'clientName': client_data.get('clientName', ''),
+                'proposalNumber': client_data.get('proposalNumber', ''),
+                'date': client_data.get('date', ''),
+                'commercialName': client_data.get('commercialName', ''),
+                'localidade': client_data.get('localidade', ''),
+                'localidade_outro': client_data.get('localidade_outro', ''),
+                'observations': client_data.get('observations', '')
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/update_client_data', methods=['POST'])
+def update_client_data():
+    """Atualiza os dados do cliente na sessão"""
+    try:
+        # Verificar se existe um orçamento na sessão
+        if 'current_budget' not in session:
+            return jsonify({
+                'success': False,
+                'error': 'Nenhum orçamento ativo encontrado'
+            }), 400
+        
+        data = request.form.to_dict()
+        
+        # Atualizar dados do cliente na sessão
+        session['current_budget']['client_data'] = {
+            'clientName': data.get('clientName', ''),
+            'proposalNumber': data.get('proposalNumber', ''),
+            'date': data.get('date', ''),
+            'commercialName': data.get('commercialName', ''),
+            'localidade': data.get('localidade', ''),
+            'localidade_outro': data.get('localidade_outro', ''),
+            'observations': data.get('observations', '')
+        }
+        
+        # Marcar sessão como modificada
+        session.modified = True
+        
+        return jsonify({
+            'success': True,
+            'message': 'Dados do cliente atualizados com sucesso'
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'Erro interno: {str(e)}'
+        }), 500
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

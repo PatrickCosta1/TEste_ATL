@@ -29,7 +29,13 @@ product_families = [{'created_at': '2025-08-18 13:03:32',
   'display_order': 5,
   'id': 5,
   'is_active': 1,
-  'name': 'Aquecimento'}]
+  'name': 'Aquecimento'},
+ {'created_at': '2025-12-27 10:00:00',
+  'description': 'Materiais de construção para piscinas com preços regionais',
+  'display_order': 6,
+  'id': 6,
+  'is_active': 1,
+  'name': 'Construção da Piscina'}]
 
 
 product_categories = [{'description': None, 'display_order': 1, 'family_id': 1, 'id': 1, 'is_active': 1, 'name': 'Filtros de Areia'},
@@ -58,7 +64,8 @@ product_categories = [{'description': None, 'display_order': 1, 'family_id': 1, 
  {'description': None, 'display_order': 1, 'family_id': 4, 'id': 24, 'is_active': 1, 'name': 'Telas'},
  {'description': None, 'display_order': 2, 'family_id': 4, 'id': 25, 'is_active': 1, 'name': 'Perfis'},
  {'description': 'Produtos para revestimento cerâmico', 'display_order': 30, 'family_id': 4, 'id': 26, 'is_active': 1, 'name': 'Cerâmica'},
- {'description': 'Bombas de calor para aquecimento de piscinas', 'display_order': 1, 'family_id': 5, 'id': 27, 'is_active': 1, 'name': 'Bomba de Calor'}]
+ {'description': 'Bombas de calor para aquecimento de piscinas', 'display_order': 1, 'family_id': 5, 'id': 27, 'is_active': 1, 'name': 'Bomba de Calor'},
+ {'description': 'Materiais de construção civil', 'display_order': 1, 'family_id': 6, 'id': 28, 'is_active': 1, 'name': 'Materiais de Construção'}]
 
 
 products = [{'base_price': 589,
@@ -1520,6 +1527,87 @@ products.append({'base_price': 999,
   'name': 'Válvula Selectora Automatica - iWash by aquark',
   'unit': 'un',
   'updated_at': '2025-08-26 09:30:00'})
+
+# Produtos da família Construção da Piscina
+products.extend([
+    # Bloco Cofragem 50x20x20
+    {'base_price': 0.90, 'brand': 'Geral', 'category_id': 28, 'code': 'BLOCO-COF-50', 'cost_price': None, 
+     'created_at': '2025-12-27 10:00:00', 'description': 'Bloco de cofragem 50x20x20cm', 'id': 113, 
+     'is_active': 1, 'model': '50x20x20', 'name': 'Bloco Cofragem 50x20x20', 'unit': 'un', 
+     'updated_at': '2025-12-27 10:00:00'},
+    
+    # Bloco Normal 50x20x20  
+    {'base_price': 0.83, 'brand': 'Geral', 'category_id': 28, 'code': 'BLOCO-NORM-50', 'cost_price': None,
+     'created_at': '2025-12-27 10:00:00', 'description': 'Bloco normal 50x20x20cm', 'id': 114,
+     'is_active': 1, 'model': '50x20x20', 'name': 'Bloco Normal 50x20x20', 'unit': 'un',
+     'updated_at': '2025-12-27 10:00:00'},
+    
+    # Cimento Cimpor 32,5R
+    {'base_price': 4.03, 'brand': 'Cimpor', 'category_id': 28, 'code': 'CIM-32.5R', 'cost_price': None,
+     'created_at': '2025-12-27 10:00:00', 'description': 'Cimento Cimpor 32,5R', 'id': 115,
+     'is_active': 1, 'model': '32,5R', 'name': 'Cimento Cimpor 32,5R', 'unit': 'un',
+     'updated_at': '2025-12-27 10:00:00'},
+    
+    # Malha Eletrosoldada 6mm
+    {'base_price': 2.96, 'brand': 'Geral', 'category_id': 28, 'code': 'MALHA-6MM', 'cost_price': None,
+     'created_at': '2025-12-27 10:00:00', 'description': 'Malha eletrosoldada 6mm', 'id': 116,
+     'is_active': 1, 'model': '6mm', 'name': 'Malha Eletrosoldada 6mm', 'unit': 'm2',
+     'updated_at': '2025-12-27 10:00:00'},
+    
+    # Heliaço 10mm 6m
+    {'base_price': 3.28, 'brand': 'Geral', 'category_id': 28, 'code': 'HELIACO-10MM', 'cost_price': None,
+     'created_at': '2025-12-27 10:00:00', 'description': 'Heliaço 10mm 6m', 'id': 117,
+     'is_active': 1, 'model': '10mm 6m', 'name': 'Heliaço 10mm 6m', 'unit': 'un',
+     'updated_at': '2025-12-27 10:00:00'},
+    
+    # Meia Areia
+    {'base_price': 25.00, 'brand': 'Geral', 'category_id': 28, 'code': 'MEIA-AREIA', 'cost_price': None,
+     'created_at': '2025-12-27 10:00:00', 'description': 'Meia areia', 'id': 118,
+     'is_active': 1, 'model': 'Standard', 'name': 'Meia Areia', 'unit': 'm3',
+     'updated_at': '2025-12-27 10:00:00'},
+    
+    # Mistura
+    {'base_price': 22.00, 'brand': 'Geral', 'category_id': 28, 'code': 'MISTURA', 'cost_price': None,
+     'created_at': '2025-12-27 10:00:00', 'description': 'Mistura para betão', 'id': 119,
+     'is_active': 1, 'model': 'Standard', 'name': 'Mistura', 'unit': 'm3',
+     'updated_at': '2025-12-27 10:00:00'},
+    
+    # Brita nº2
+    {'base_price': 28.70, 'brand': 'Geral', 'category_id': 28, 'code': 'BRITA-2', 'cost_price': None,
+     'created_at': '2025-12-27 10:00:00', 'description': 'Brita nº2', 'id': 120,
+     'is_active': 1, 'model': 'nº2', 'name': 'Brita nº2', 'unit': 'm3',
+     'updated_at': '2025-12-27 10:00:00'},
+    
+    # Reboco Exterior Cinza
+    {'base_price': 2.60, 'brand': 'Geral', 'category_id': 28, 'code': 'REBOCO-EXT', 'cost_price': None,
+     'created_at': '2025-12-27 10:00:00', 'description': 'Reboco exterior cinza', 'id': 121,
+     'is_active': 1, 'model': 'Cinza', 'name': 'Reboco Exterior Cinza', 'unit': 'un',
+     'updated_at': '2025-12-27 10:00:00'},
+    
+    # Viga
+    {'base_price': 2.30, 'brand': 'Geral', 'category_id': 28, 'code': 'VIGA', 'cost_price': None,
+     'created_at': '2025-12-27 10:00:00', 'description': 'Viga de betão', 'id': 122,
+     'is_active': 1, 'model': 'Standard', 'name': 'Viga', 'unit': 'm',
+     'updated_at': '2025-12-27 10:00:00'},
+    
+    # Abobadilhas 40cm
+    {'base_price': 0.71, 'brand': 'Geral', 'category_id': 28, 'code': 'ABOB-40CM', 'cost_price': None,
+     'created_at': '2025-12-27 10:00:00', 'description': 'Abobadilhas 40cm', 'id': 123,
+     'is_active': 1, 'model': '40cm', 'name': 'Abobadilhas 40cm', 'unit': 'un',
+     'updated_at': '2025-12-27 10:00:00'},
+    
+    # Arame Queimado (preço fixo: 2kg × €2,50 = €5,00)
+    {'base_price': 2.50, 'brand': 'Geral', 'category_id': 28, 'code': 'ARAME-QUEIM', 'cost_price': None,
+     'created_at': '2025-12-27 10:00:00', 'description': 'Arame queimado', 'id': 124,
+     'is_active': 1, 'model': 'Standard', 'name': 'Arame Queimado', 'unit': 'kg',
+     'updated_at': '2025-12-27 10:00:00'},
+    
+    # Tela Pitonada (preço fixo: €1,50/m²)
+    {'base_price': 1.50, 'brand': 'Geral', 'category_id': 28, 'code': 'TELA-PITON', 'cost_price': None,
+     'created_at': '2025-12-27 10:00:00', 'description': 'Tela pitonada', 'id': 125,
+     'is_active': 1, 'model': 'Standard', 'name': 'Tela Pitonada', 'unit': 'm2',
+     'updated_at': '2025-12-27 10:00:00'}
+])
 
 
 attribute_types = [{'data_type': 'numeric',

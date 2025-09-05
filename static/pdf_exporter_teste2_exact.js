@@ -34,7 +34,9 @@ async function gerarPDF(orcamento) {
     paginaInfo.drawText(sanitizeText(orcamento.proposta) || '', { x: 133, y: 625, size: 13, font: fontBold, color: rgb(0, 0.059, 0.329) }); // Nº Proposta
     paginaInfo.drawText(sanitizeText(orcamento.comercial) || '', { x: 133, y: 577, size: 13, font: fontBold, color: rgb(0, 0.059, 0.329) }); // Comercial (negrito)
     paginaInfo.drawText(sanitizeText(orcamento.cliente) || '', { x: 458, y: 625, size: 13, font: fontBold, color: rgb(0, 0.059, 0.329) }); // A/C Sr(a).
-    paginaInfo.drawText(sanitizeText(orcamento.morada) || '', { x: 458, y: 577, size: 13, font: fontBold, color: rgb(0, 0.059, 0.329) }); // Morada
+  // Mostrar localidade: se for 'Outro' usar localidade_outro quando disponível
+  const localidadeParaPDF = (orcamento.localidade === 'Outro' && orcamento.localidade_outro) ? orcamento.localidade_outro : (orcamento.localidade || '');
+  paginaInfo.drawText(sanitizeText(localidadeParaPDF) || '', { x: 458, y: 577, size: 13, font: fontBold, color: rgb(0, 0.059, 0.329) }); // Localidade
     paginaInfo.drawText(`${new Date().toLocaleDateString()}`, { x: 458, y: 528, size: 13, font: fontBold, color: rgb(0, 0.059, 0.329) }); // Data
     
     // Detalhes da Piscina (COORDENADAS EXATAS DO TESTE2) - com validação
@@ -574,7 +576,8 @@ async function exportBudgetToPDFTeste2() {
     // Converter dados do Flask para formato do teste2
     const orcamentoTeste2 = {
       cliente: clientData.clientName || '',
-      morada: clientData.address || '',
+  localidade: clientData.localidade || '',
+  localidade_outro: clientData.localidade_outro || '',
       comercial: clientData.commercialName || '',  // Corrigido: campo correto do formulário
       proposta: clientData.proposalNumber || '',
       piscina: {

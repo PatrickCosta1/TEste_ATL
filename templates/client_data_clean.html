@@ -79,9 +79,26 @@
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label" for="address">Morada</label>
-                        <input type="text" class="form-input" id="address" name="address" 
-                               placeholder="Morada">
+                        <label class="form-label" for="localidade">Localidade</label>
+                        <select class="form-input" id="localidade" name="localidade" required>
+                            <option value="">-- Selecionar Localidade --</option>
+                            <option>Viseu</option>
+                            <option>Ponte Lima</option>
+                            <option>Barcelos</option>
+                            <option>Santa Maria da Feira</option>
+                            <option>Póvoa de Varzim/Vila do Conde</option>
+                            <option>Viana do Castelo</option>
+                            <option>Famalicão</option>
+                            <option>Ovar/Estarreja</option>
+                            <option>Gaia</option>
+                            <option>Braga</option>
+                            <option>Guimarães</option>
+                            <option>Porto/Maia/Matosinhos</option>
+                            <option value="Outro">Outro</option>
+                        </select>
+
+                        <input type="text" class="form-input" id="localidade_outro" name="localidade_outro" 
+                               placeholder="Especifique outra localidade" style="display:none; margin-top:0.5rem;">
                     </div>
 
                     <div class="form-group">
@@ -132,6 +149,26 @@
 
             // Validação inicial
             checkFormValidity();
+            
+            // Mostrar/ocultar campo "Outro" para localidade
+            const localidadeSelect = document.getElementById('localidade');
+            const localidadeOutro = document.getElementById('localidade_outro');
+
+            function toggleLocalidadeOutro() {
+                if (localidadeSelect.value === 'Outro') {
+                    localidadeOutro.style.display = 'block';
+                    localidadeOutro.required = true;
+                } else {
+                    localidadeOutro.style.display = 'none';
+                    localidadeOutro.required = false;
+                    localidadeOutro.value = '';
+                }
+                checkFormValidity();
+            }
+
+            localidadeSelect.addEventListener('change', toggleLocalidadeOutro);
+            // Invocar inicialmente para o caso de edição/preenchimento existente
+            toggleLocalidadeOutro();
         });
     </script>
 </body>

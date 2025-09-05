@@ -99,6 +99,80 @@
                         <input type="hidden" id="calculated_ml_bordadura" name="ml_bordadura" value="">
                         <input type="hidden" id="calculated_rolos_tl" name="rolos_tl" value="">
                         <input type="hidden" id="calculated_rolos_3d" name="rolos_3d" value="">
+
+                        <!-- Campos adicionais: Zona de Praia e Escadas -->
+                        <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--border-color);">
+                            <h4 style="margin-bottom: 1.5rem; color: var(--primary); font-size: 1.1rem;">
+                                <i class="fas fa-plus-circle"></i>
+                                Elementos Adicionais
+                            </h4>
+
+                            <div class="grid grid-2" style="gap: 2rem;">
+                                <!-- Zona de Praia -->
+                                <div class="form-group">
+                                    <label class="form-label">Há zona de praia?</label>
+                                    <div class="radio-group" style="margin-bottom: 1rem;">
+                                        <div class="radio-option">
+                                            <input type="radio" name="zona_praia" id="zona_praia_sim" value="sim">
+                                            <label for="zona_praia_sim">
+                                                <i class="fas fa-umbrella-beach" style="color: var(--success);"></i><br>
+                                                Sim
+                                            </label>
+                                        </div>
+                                        <div class="radio-option">
+                                            <input type="radio" name="zona_praia" id="zona_praia_nao" value="nao">
+                                            <label for="zona_praia_nao">
+                                                <i class="fas fa-times-circle" style="color: var(--text-secondary);"></i><br>
+                                                Não
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <!-- Campos condicionais para zona de praia -->
+                                    <div id="zona_praia_campos" style="display: none;">
+                                        <div class="grid grid-2" style="gap: 1rem;">
+                                            <div class="form-group">
+                                                <label class="form-label" for="zona_praia_largura">Largura (m)</label>
+                                                <input type="number" step="0.01" class="form-input" id="zona_praia_largura" name="zona_praia_largura" placeholder="0.00">
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="form-label" for="zona_praia_comprimento">Comprimento (m)</label>
+                                                <input type="number" step="0.01" class="form-input" id="zona_praia_comprimento" name="zona_praia_comprimento" placeholder="0.00">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Escadas -->
+                                <div class="form-group">
+                                    <label class="form-label">Há escadas?</label>
+                                    <div class="radio-group" style="margin-bottom: 1rem;">
+                                        <div class="radio-option">
+                                            <input type="radio" name="escadas" id="escadas_sim" value="sim">
+                                            <label for="escadas_sim">
+                                                <i class="fas fa-sort-amount-up" style="color: var(--success);"></i><br>
+                                                Sim
+                                            </label>
+                                        </div>
+                                        <div class="radio-option">
+                                            <input type="radio" name="escadas" id="escadas_nao" value="nao">
+                                            <label for="escadas_nao">
+                                                <i class="fas fa-times-circle" style="color: var(--text-secondary);"></i><br>
+                                                Não
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <!-- Campo condicional para escadas -->
+                                    <div id="escadas_campos" style="display: none;">
+                                        <div class="form-group">
+                                            <label class="form-label" for="escadas_largura">Largura da Escada (m)</label>
+                                            <input type="number" step="0.01" class="form-input" id="escadas_largura" name="escadas_largura" placeholder="0.00">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Seção 2: Condições do Local -->
@@ -701,8 +775,10 @@
 
                     // Calcular todas as métricas adicionais
                     const m2_paredes = (comprimento * 2 + largura * 2) * profMedia;
-                    const m3_massa = (((comprimento + 0.03) * (largura + 0.3)) * 0.2) + (m2_paredes * 0.2);
-                    const m2_fundo = (comprimento / 1.6) * largura * 1.65;
+                    // Novo cálculo pedido: ((comprimento + 0,4) * (largura + 0,4)) * 0,15 + m2paredes * 0,16
+                    // Note: usar ponto como separador decimal em JS
+                    const m3_massa = (( (comprimento + 0.4) * (largura + 0.4) ) * 0.15) + (m2_paredes * 0.16);
+                    const m2_fundo = (comprimento + 0.4) * (largura + 0.4);
                     const profMaxima = parseFloat(document.getElementById('prof_max').value) || 0;
                     let m2_tela = 0;
                     let rolos_tl = 0;
@@ -792,7 +868,55 @@
 
             // Verificar e restaurar automaticamente estado salvo
             checkAndRestoreState();
+
+            // Adicionar event listeners para zona de praia e escadas
+            setupZonaPraiaListeners();
+            setupEscadasListeners();
         });
+
+        // Função para controlar zona de praia
+        function setupZonaPraiaListeners() {
+            const zonaPraiaRadios = document.querySelectorAll('input[name="zona_praia"]');
+            const zonaPraiaCampos = document.getElementById('zona_praia_campos');
+            const zonaPraiaLargura = document.getElementById('zona_praia_largura');
+            const zonaPraiaComprimento = document.getElementById('zona_praia_comprimento');
+
+            zonaPraiaRadios.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    if (this.value === 'sim') {
+                        zonaPraiaCampos.style.display = 'block';
+                        zonaPraiaLargura.required = true;
+                        zonaPraiaComprimento.required = true;
+                    } else {
+                        zonaPraiaCampos.style.display = 'none';
+                        zonaPraiaLargura.required = false;
+                        zonaPraiaComprimento.required = false;
+                        zonaPraiaLargura.value = '';
+                        zonaPraiaComprimento.value = '';
+                    }
+                });
+            });
+        }
+
+        // Função para controlar escadas
+        function setupEscadasListeners() {
+            const escadasRadios = document.querySelectorAll('input[name="escadas"]');
+            const escadasCampos = document.getElementById('escadas_campos');
+            const escadasLargura = document.getElementById('escadas_largura');
+
+            escadasRadios.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    if (this.value === 'sim') {
+                        escadasCampos.style.display = 'block';
+                        escadasLargura.required = true;
+                    } else {
+                        escadasCampos.style.display = 'none';
+                        escadasLargura.required = false;
+                        escadasLargura.value = '';
+                    }
+                });
+            });
+        }
 
         // Função para controlar a visibilidade das sub-opções de cobertura
         function toggleCoberturaSubOptions() {
