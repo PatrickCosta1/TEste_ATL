@@ -134,10 +134,7 @@
                                             <div class="form-group">
                                                 <label class="form-label" for="zona_praia_largura">Largura (m)</label>
                                                 <input type="number" step="0.01" class="form-input" id="zona_praia_largura" name="zona_praia_largura" placeholder="0.00">
-                                            </div>
-                                            <div class="form-group">
-                                                <label class="form-label" for="zona_praia_comprimento">Comprimento (m)</label>
-                                                <input type="number" step="0.01" class="form-input" id="zona_praia_comprimento" name="zona_praia_comprimento" placeholder="0.00">
+                                                <small class="form-help">O comprimento da zona de praia será automaticamente igual à largura da piscina</small>
                                             </div>
                                         </div>
                                     </div>
@@ -879,18 +876,15 @@
             const zonaPraiaRadios = document.querySelectorAll('input[name="zona_praia"]');
             const zonaPraiaCampos = document.getElementById('zona_praia_campos');
             const zonaPraiaLargura = document.getElementById('zona_praia_largura');
-            const zonaPraiaComprimento = document.getElementById('zona_praia_comprimento');
 
             zonaPraiaRadios.forEach(radio => {
                 radio.addEventListener('change', function() {
                     if (this.value === 'sim') {
                         zonaPraiaCampos.style.display = 'block';
                         zonaPraiaLargura.required = true;
-                        zonaPraiaComprimento.required = true;
                     } else {
                         zonaPraiaCampos.style.display = 'none';
                         zonaPraiaLargura.required = false;
-                        zonaPraiaComprimento.required = false;
                         zonaPraiaLargura.value = '';
                         zonaPraiaComprimento.value = '';
                     }

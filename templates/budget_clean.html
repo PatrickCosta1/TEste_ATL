@@ -7114,13 +7114,7 @@
                                                     <input type="number" id="edit-zona-praia-largura" value="${currentAnswers.zona_praia_largura || ''}" step="0.01" />
                                                     <span class="input-unit">m</span>
                                                 </div>
-                                            </div>
-                                            <div class="form-group premium-field">
-                                                <label>Comprimento da Zona de Praia</label>
-                                                <div class="input-wrapper">
-                                                    <input type="number" id="edit-zona-praia-comprimento" value="${currentAnswers.zona_praia_comprimento || ''}" step="0.01" />
-                                                    <span class="input-unit">m</span>
-                                                </div>
+                                                <small class="form-help">O comprimento da zona de praia é automaticamente igual à largura da piscina</small>
                                             </div>
                                         </div>
                                     </div>
@@ -7537,9 +7531,7 @@
                                     zonaPraiaCampos.style.display = 'none';
                                     // Clear zona praia inputs
                                     const larguraInput = document.getElementById('edit-zona-praia-largura');
-                                    const comprimentoInput = document.getElementById('edit-zona-praia-comprimento');
                                     if (larguraInput) larguraInput.value = '';
-                                    if (comprimentoInput) comprimentoInput.value = '';
                                 }
                             }
                         }
@@ -7588,7 +7580,7 @@
                 // Zona de praia e escadas
                 zona_praia: document.getElementById('edit-zona-praia').value,
                 zona_praia_largura: document.getElementById('edit-zona-praia-largura') ? parseFloat(document.getElementById('edit-zona-praia-largura').value) || 0 : 0,
-                zona_praia_comprimento: document.getElementById('edit-zona-praia-comprimento') ? parseFloat(document.getElementById('edit-zona-praia-comprimento').value) || 0 : 0,
+                zona_praia_comprimento: document.getElementById('edit-zona-praia').value === 'sim' ? parseFloat(document.getElementById('edit-largura').value) || 0 : 0, // Comprimento = largura da piscina
                 escadas: document.getElementById('edit-escadas').value,
                 escadas_largura: document.getElementById('edit-escadas-largura') ? parseFloat(document.getElementById('edit-escadas-largura').value) || 0 : 0
             };

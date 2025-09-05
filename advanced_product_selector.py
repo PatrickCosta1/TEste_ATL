@@ -1767,7 +1767,8 @@ class AdvancedProductSelector:
         # Zona de praia e escadas
         zona_praia = answers.get('zona_praia', 'nao') == 'sim'
         zona_praia_largura = answers.get('zona_praia_largura', 0)
-        zona_praia_comprimento = answers.get('zona_praia_comprimento', 0)
+        # O comprimento da zona de praia é sempre igual à largura da piscina
+        zona_praia_comprimento = dimensions.get('largura', 0) if zona_praia else 0
         escadas = answers.get('escadas', 'nao') == 'sim'
         escadas_largura = answers.get('escadas_largura', 0)
         

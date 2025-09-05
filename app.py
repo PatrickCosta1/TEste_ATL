@@ -239,7 +239,7 @@ def generate_budget():
             # ZONA DE PRAIA E ESCADAS
             'zona_praia': data.get('zona_praia'),
             'zona_praia_largura': float(data.get('zona_praia_largura', 0)) if data.get('zona_praia_largura') else 0,
-            'zona_praia_comprimento': float(data.get('zona_praia_comprimento', 0)) if data.get('zona_praia_comprimento') else 0,
+            'zona_praia_comprimento': float(data.get('largura', 0)) if data.get('zona_praia') == 'sim' else 0,  # Comprimento = largura da piscina
             'escadas': data.get('escadas'),
             'escadas_largura': float(data.get('escadas_largura', 0)) if data.get('escadas_largura') else 0
         }
