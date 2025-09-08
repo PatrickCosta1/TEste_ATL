@@ -1754,10 +1754,30 @@ class AdvancedProductSelector:
             }
         }
         
+        # Mapeamento de localidades individuais para grupos de preços
+        # Permite que localidades separadas usem a mesma tabela de preços
+        mapeamento_localidades = {
+            # Póvoa de Varzim e Vila do Conde usam os mesmos preços
+            'Póvoa de Varzim': 'Póvoa de Varzim/Vila do Conde',
+            'Vila do Conde': 'Póvoa de Varzim/Vila do Conde',
+            
+            # Ovar e Estarreja usam os mesmos preços
+            'Ovar': 'Ovar/Estarreja',
+            'Estarreja': 'Ovar/Estarreja',
+            
+            # Porto, Maia e Matosinhos usam os mesmos preços
+            'Porto': 'Porto/Maia/Matosinhos',
+            'Maia': 'Porto/Maia/Matosinhos',
+            'Matosinhos': 'Porto/Maia/Matosinhos'
+        }
+        
         # Obter preços para a localidade específica ou calcular média se for "Outro"
         def get_price_for_region(product_name):
-            if localidade in regiao_precos:
-                return regiao_precos[localidade].get(product_name, 0)
+            # Verificar se a localidade precisa ser mapeada para um grupo
+            localidade_para_preco = mapeamento_localidades.get(localidade, localidade)
+            
+            if localidade_para_preco in regiao_precos:
+                return regiao_precos[localidade_para_preco].get(product_name, 0)
             else:
                 # Calcular média de todas as regiões
                 total = 0

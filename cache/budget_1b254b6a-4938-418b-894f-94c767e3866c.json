@@ -1,68 +1,68 @@
 {
-  "timestamp": "2025-09-08T09:33:03.330664",
+  "timestamp": "2025-09-08T09:46:37.363649",
   "budget": {
     "pool_info": {
       "dimensions": {
         "comprimento": 8.0,
-        "largura": 4.0,
+        "largura": 5.0,
         "prof_min": 1.1,
         "prof_max": 1.6
       },
       "metrics": {
         "prof_media": 1.35,
-        "volume": 43.2,
-        "m3_h": 10.8,
-        "m3_massa": 10.73,
-        "m2_fundo": 36.96,
-        "m2_paredes": 32.4,
-        "m2_tela": 72.6,
-        "ml_bordadura": 26.0,
-        "perimetro": 24.0,
-        "rolos_tl": 2,
+        "volume": 54.0,
+        "m3_h": 13.5,
+        "m3_massa": 12.42,
+        "m2_fundo": 45.36,
+        "m2_paredes": 35.1,
+        "m2_tela": 84.15,
+        "ml_bordadura": 28.0,
+        "perimetro": 26.0,
+        "rolos_tl": 3,
         "rolos_3d": 3
       },
       "answers": {
         "acesso": "dificil",
-        "escavacao": "true",
+        "escavacao": "false",
         "forma": "standard",
         "tipo_piscina": "skimmer",
         "revestimento": "tela",
         "domotica": "true",
-        "localizacao": "exterior",
+        "localizacao": "interior",
         "luz": "monofasica",
         "tratamento_agua": "clorador_salino_ph_uv",
         "tipo_construcao": "nova",
-        "cobertura": "lona",
+        "cobertura": "bolhas",
         "tipo_cobertura_laminas": "",
         "zona_praia": "sim",
         "zona_praia_largura": 1,
-        "zona_praia_comprimento": 4,
+        "zona_praia_comprimento": 5,
         "escadas": "sim",
         "escadas_largura": 1,
-        "casa_maquinas_abaixo": "nao",
+        "casa_maquinas_abaixo": "sim",
         "casa_maquinas_desc": "",
         "tipo_luzes": "rgb"
       },
-      "multiplier": 1.11384,
+      "multiplier": 1.092,
       "multiplier_breakdown": {
         "geometrico": 1.0,
-        "tecnologico": 1.061,
+        "tecnologico": 1.04,
         "mercado": 1.05,
-        "final": 1.114
+        "final": 1.092
       },
       "transport_costs": {
         "nivel_acesso": "dificil",
         "custo_por_m3": 10.0,
         "custo_transporte_fixo": 500.0,
-        "custo_total_m3": 107.3,
-        "custo_total": 607.3,
-        "m3_massa_usado": 10.73,
+        "custo_total_m3": 124.2,
+        "custo_total": 624.2,
+        "m3_massa_usado": 12.42,
         "explicacao": "Acesso difícil ao local da obra",
         "breakdown": [
           {
-            "descricao": "Custo por m³ de massa (10.73 m³)",
-            "calculo": "10.73 × 10.00€",
-            "valor": 107.3
+            "descricao": "Custo por m³ de massa (12.42 m³)",
+            "calculo": "12.42 × 10.00€",
+            "valor": 124.2
           },
           {
             "descricao": "Custo fixo de transporte",
@@ -75,8 +75,8 @@
     "client_data": {
       "clientName": "Patrick Costa",
       "commercialName": "Rui Vaz",
-      "date": "2025-09-05",
-      "localidade": "Ponte Lima",
+      "date": "2025-09-08",
+      "localidade": "Estarreja",
       "localidade_outro": "",
       "observations": "",
       "proposalNumber": "PO 001"
@@ -89,7 +89,7 @@
           "quantity": 1,
           "unit": "un",
           "item_type": "incluido",
-          "reasoning": "Filtro selecionado para piscina exterior com capacidade 10.8 m³/h",
+          "reasoning": "Filtro selecionado para piscina interior com capacidade 13.5 m³/h",
           "can_change_type": true,
           "product_id": 3
         },
@@ -114,15 +114,15 @@
           "product_id": 100,
           "alternative_to": "valve_01_101"
         },
-        "pump_01_12": {
-          "name": "Bomba de filtração Vitoria Plus Silent Astralpool - 0,75HP(M) 11m3/h",
-          "price": 540,
+        "pump_01_13": {
+          "name": "Bomba de filtração Vitoria Plus Silent Astralpool - 1,0HP(M) 16m3/h",
+          "price": 555,
           "quantity": 1,
           "unit": "un",
           "item_type": "incluido",
-          "reasoning": "Bomba padrão: 11m³/h (monofasica)",
+          "reasoning": "Bomba padrão: 16m³/h (monofasica)",
           "can_change_type": true,
-          "product_id": 12
+          "product_id": 13
         },
         "pump_02_8": {
           "name": "Bomba filtração Velocidade Variável InverEco 1.0HP(M) 16m3 By Aquark (ALTERNATIVO)",
@@ -133,7 +133,7 @@
           "reasoning": "Eficiência energética: 16m³/h (velocidade variável)",
           "can_change_type": true,
           "product_id": 8,
-          "alternative_to": "pump_01_12"
+          "alternative_to": "pump_01_13"
         },
         "vidro_fino_23_filter_01_3": {
           "name": "Vidro granulado ionizado ativado - granulometria 0,4-1,0mm (Sacos de 20kg)",
@@ -185,16 +185,16 @@
           "quantity": 2,
           "unit": "un",
           "item_type": "incluido",
-          "reasoning": "Skimmers para piscina skimmer 4.0m de largura",
+          "reasoning": "Skimmers para piscina skimmer 5.0m de largura",
           "can_change_type": true
         },
         "boca_impulsao_43": {
           "name": "Boca de Impulsão de parede Astralpool Liner",
           "price": 14.25,
-          "quantity": 3,
+          "quantity": 4,
           "unit": "un",
           "item_type": "incluido",
-          "reasoning": "Bocas de impulsão para piscina 4.0m de largura",
+          "reasoning": "Bocas de impulsão para piscina 5.0m de largura",
           "can_change_type": true
         },
         "tomada_aspiracao_51": {
@@ -209,10 +209,10 @@
         "passamuros_54": {
           "name": "Passamuros Astralpool Liner",
           "price": 13.9,
-          "quantity": 4,
+          "quantity": 5,
           "unit": "un",
           "item_type": "incluido",
-          "reasoning": "Passamuros para instalação (4 unidades)",
+          "reasoning": "Passamuros para instalação (5 unidades)",
           "can_change_type": true
         },
         "regulador_nivel_58": {
@@ -254,16 +254,16 @@
           "quantity": 1,
           "unit": "un",
           "item_type": "incluido",
-          "reasoning": "Ralo de fundo para piscina 32.0m² (tela)",
+          "reasoning": "Ralo de fundo para piscina 40.0m² (tela)",
           "can_change_type": true
         },
-        "iluminacao_72": {
-          "name": "Projector Led Luz RGB de 100mm",
-          "price": 423,
+        "iluminacao_73": {
+          "name": "Projector Led Luz RGB de 170mm",
+          "price": 480,
           "quantity": 3,
           "unit": "un",
           "item_type": "incluido",
-          "reasoning": "Iluminação para piscina 8.0x4.0m (rgb)",
+          "reasoning": "Iluminação para piscina 8.0x5.0m (rgb)",
           "can_change_type": true
         }
       },
@@ -271,19 +271,19 @@
         "sal_granulado_refinado": {
           "name": "Sal Granulado Refinado",
           "price": 9.9,
-          "quantity": 11,
+          "quantity": 13,
           "unit": "un",
           "item_type": "incluido",
-          "reasoning": "Quantidade calculada para 43.2 m³ de piscina",
+          "reasoning": "Quantidade calculada para 54.0 m³ de piscina",
           "can_change_type": false
         },
         "mr_pure": {
-          "name": "Mr. Pure 50m3 By Aquark",
-          "price": 1750,
+          "name": "Mr. Pure 90m3 By Aquark",
+          "price": 1850,
           "quantity": 1,
           "unit": "un",
           "item_type": "incluido",
-          "reasoning": "Clorador salino + PH selecionado para 43.2 m³",
+          "reasoning": "Clorador salino + PH selecionado para 54.0 m³",
           "can_change_type": false
         },
         "uv_titan": {
@@ -292,7 +292,7 @@
           "quantity": 1,
           "unit": "un",
           "item_type": "incluido",
-          "reasoning": "Sistema UV selecionado para 10.8 m³/h",
+          "reasoning": "Sistema UV selecionado para 13.5 m³/h",
           "can_change_type": false
         },
         "protecao_anodica": {
@@ -331,10 +331,10 @@
         "perfil": {
           "name": "Perfil Horizontal de Fixação (2ml)",
           "price": 5.25,
-          "quantity": 13,
+          "quantity": 14,
           "unit": "un",
           "item_type": "incluido",
-          "reasoning": "Perfil horizontal: 13 un (2ml cada)",
+          "reasoning": "Perfil horizontal: 14 un (2ml cada)",
           "can_change_type": true,
           "alternatives": [
             {
@@ -348,35 +348,35 @@
         "chapa_colaminada": {
           "name": "Chapa Colaminada",
           "price": 7.5,
-          "quantity": 13,
+          "quantity": 14,
           "unit": "un",
           "item_type": "alternativo",
-          "reasoning": "Alternativa à horizontal: 13 un (2ml cada)",
+          "reasoning": "Alternativa à horizontal: 14 un (2ml cada)",
           "alternative_to": "perfil",
           "can_change_type": false,
           "product_id": 99
         }
       },
       "aquecimento": {
-        "bomba_calor_105": {
-          "name": "Mr. Comfort 130M (12.6kW, 30-60m3)",
-          "price": 2386.35,
+        "bomba_calor_106": {
+          "name": "Mr. Comfort 160M (16.1kW, 40-75m3)",
+          "price": 3054.52,
           "quantity": 1,
           "unit": "UN",
           "item_type": "incluido",
-          "reasoning": "Bomba de calor selecionada para piscina de 43.2 m³",
+          "reasoning": "Bomba de calor selecionada para piscina de 54.0 m³",
           "can_change_type": true,
           "editable_price": false,
           "editable_name": false
         },
-        "bomba_calor_fairland_109": {
-          "name": "Fairland InverX20 X20-14 (14kW, 30-50m³)",
-          "price": 2900,
+        "bomba_calor_fairland_110": {
+          "name": "Fairland InverX20 X20-18 (18kW, 40-65m³)",
+          "price": 3400,
           "quantity": 1,
           "unit": "UN",
           "item_type": "alternativo",
-          "alternative_to": "bomba_calor_105",
-          "reasoning": "Bomba de calor Fairland - Gama Superior alternativa para piscina de 43.2 m³",
+          "alternative_to": "bomba_calor_106",
+          "reasoning": "Bomba de calor Fairland - Gama Superior alternativa para piscina de 54.0 m³",
           "can_change_type": true,
           "editable_price": false,
           "editable_name": false
@@ -386,10 +386,10 @@
         "bloco_cofragem": {
           "name": "Bloco Cofragem 50x20x20",
           "price": 1.1033333333333333,
-          "quantity": 324,
+          "quantity": 351,
           "unit": "un",
           "item_type": "incluido",
-          "reasoning": "10 blocos por m² de parede (32.40 m²)",
+          "reasoning": "10 blocos por m² de parede (35.10 m²)",
           "can_change_type": true
         },
         "bloco_normal": {
@@ -404,37 +404,37 @@
         "cimento": {
           "name": "Cimento Cimpor 32,5R",
           "price": 3.8625000000000003,
-          "quantity": 107.30000000000001,
+          "quantity": 124.2,
           "unit": "un",
           "item_type": "incluido",
-          "reasoning": "10 sacos por m³ de massa (10.73 m³)",
+          "reasoning": "10 sacos por m³ de massa (12.42 m³)",
           "can_change_type": true
         },
         "mistura": {
           "name": "Mistura",
           "price": 30.850000000000005,
-          "quantity": 10.73,
+          "quantity": 12.42,
           "unit": "m3",
           "item_type": "incluido",
-          "reasoning": "1 m³ por m³ de massa (10.73 m³)",
+          "reasoning": "1 m³ por m³ de massa (12.42 m³)",
           "can_change_type": true
         },
         "malha_eletrosoldada": {
           "name": "Malha Eletrosoldada 6mm",
           "price": 2.729166666666666,
-          "quantity": 32.4,
+          "quantity": 35.1,
           "unit": "m2",
           "item_type": "incluido",
-          "reasoning": "Igual a m² de paredes (32.40 m²)",
+          "reasoning": "Igual a m² de paredes (35.10 m²)",
           "can_change_type": true
         },
         "heliaco": {
           "name": "Heliaço 10mm 6m",
           "price": 3.624166666666666,
-          "quantity": 104,
+          "quantity": 113,
           "unit": "un",
           "item_type": "incluido",
-          "reasoning": "Barras verticais: 40.0 + Barras horizontais: 64.0",
+          "reasoning": "Barras verticais: 43.3 + Barras horizontais: 69.3",
           "can_change_type": true
         },
         "arame_queimado": {
@@ -458,59 +458,59 @@
         "reboco_exterior": {
           "name": "Reboco Exterior Cinza",
           "price": 2.676666666666667,
-          "quantity": 19.439999999999998,
+          "quantity": 21.06,
           "unit": "un",
           "item_type": "incluido",
-          "reasoning": "0,6 sacos por m² de parede (32.40 m²)",
+          "reasoning": "0,6 sacos por m² de parede (35.10 m²)",
           "can_change_type": true
         },
         "vigas": {
           "name": "Viga",
           "price": 2.723333333333333,
-          "quantity": 8.692307692307692,
+          "quantity": 10.615384615384615,
           "unit": "m",
           "item_type": "incluido",
-          "reasoning": "Zona praia: ((4.0/0,52)+1) × 1",
+          "reasoning": "Zona praia: ((5.0/0,52)+1) × 1",
           "can_change_type": true
         },
         "abobadilhas": {
           "name": "Abobadilhas 40cm",
           "price": 0.6774999999999999,
-          "quantity": 21.73076923076923,
+          "quantity": 26.538461538461537,
           "unit": "un",
           "item_type": "incluido",
-          "reasoning": "(1/0,40) × 8.7 vigas",
+          "reasoning": "(1/0,40) × 10.6 vigas",
           "can_change_type": true
         },
         "tela_pitonada": {
           "name": "Tela Pitonada",
           "price": 1.5,
-          "quantity": 32.400000000000006,
+          "quantity": 35.1,
           "unit": "m2",
           "item_type": "incluido",
-          "reasoning": "Perímetro × prof. média: 24.00 × 1.35",
+          "reasoning": "Perímetro × prof. média: 26.00 × 1.35",
           "can_change_type": true
         },
         "brita_n2": {
           "name": "Brita nº2",
           "price": 29.87666666666667,
-          "quantity": 2,
+          "quantity": 3,
           "unit": "m3",
           "item_type": "incluido",
-          "reasoning": "M² fundo × 0,05: 36.96 × 0,05 (arredondado)",
+          "reasoning": "M² fundo × 0,05: 45.36 × 0,05 (arredondado)",
           "can_change_type": true
         }
       }
     },
     "family_totals": {
-      "filtracao": 2666.98,
-      "recirculacao_iluminacao": 2321.41,
-      "tratamento_agua": 3172.1,
-      "revestimento": 4085.4,
-      "aquecimento": 2658.01,
-      "construcao": 2028.19
+      "filtracao": 2631.06,
+      "recirculacao_iluminacao": 2493.36,
+      "tratamento_agua": 3240.73,
+      "revestimento": 4011.03,
+      "aquecimento": 3335.54,
+      "construcao": 2243.89
     },
-    "total_price": 17539.39,
+    "total_price": 18579.81,
     "family_display_map": {
       "filtracao": "Filtração",
       "recirculacao_iluminacao": "Recirculação e Iluminação",
@@ -519,7 +519,7 @@
       "aquecimento": "Aquecimento",
       "construcao": "Construção da Piscina"
     },
-    "transport_cost": 607.3,
-    "subtotal_products": 16932.09
+    "transport_cost": 624.2,
+    "subtotal_products": 17955.61
   }
 }

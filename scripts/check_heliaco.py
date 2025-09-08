@@ -61,7 +61,7 @@ def test_heliaco_logic():
         'tratamento_agua': 'cloro_manual',
         'tipo_construcao': 'nova',
         'cobertura': 'nao',
-        'localidade': 'Porto/Maia/Matosinhos'  # Para garantir preços conhecidos
+        'localidade': 'Porto'  # Para garantir preços conhecidos (agora usa preços do grupo Porto/Maia/Matosinhos)
     }
     
     print("Respostas do questionário:")
