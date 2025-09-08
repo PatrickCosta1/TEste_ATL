@@ -11,6 +11,26 @@ function sanitizeText(text) {
   return text.replace(/[\u{1F000}-\u{1F9FF}]/gu, '[?]');
 }
 
+// Função para formatar números com exatamente 2 casas decimais
+function formatNumber(value, decimals = 2) {
+  if (value === null || value === undefined || isNaN(value)) return '0';
+  return parseFloat(value).toFixed(decimals);
+}
+
+// Função para formatar preços com exatamente 2 casas decimais
+function formatPrice(value) {
+  if (value === null || value === undefined || isNaN(value)) return '€0,00';
+  return `€${parseFloat(value).toFixed(2).replace('.', ',')}`;
+}
+
+// Função para formatar quantidades - se inteiro, sem casas decimais; caso contrário 2 casas decimais
+function formatQuantity(value) {
+  if (value === null || value === undefined || isNaN(value)) return '0';
+  const num = parseFloat(value);
+  if (Number.isInteger(num)) return String(num);
+  return num.toFixed(2).replace('.', ',');
+}
+
 // Função principal para gerar PDF (igual ao teste2)
 async function gerarPDF(orcamento) {
   try {
@@ -40,9 +60,9 @@ async function gerarPDF(orcamento) {
     paginaInfo.drawText(`${new Date().toLocaleDateString()}`, { x: 458, y: 528, size: 13, font: fontBold, color: rgb(0, 0.059, 0.329) }); // Data
     
     // Detalhes da Piscina (COORDENADAS EXATAS DO TESTE2) - com validação
-    paginaInfo.drawText(`${orcamento.piscina.comprimento || '0'}m`, { x: 176, y: 463.5, size: 12, font: font, color: rgb(0, 0.059, 0.329) }); // Comprimento
-    paginaInfo.drawText(`${orcamento.piscina.largura || '0'}m`, { x: 143, y: 449, size: 12, font: font, color: rgb(0, 0.059, 0.329) }); // Largura
-    paginaInfo.drawText(`${orcamento.piscina.profundidade || '0'}m`, { x: 176, y: 435, size: 12, font: font, color: rgb(0, 0.059, 0.329) }); // Profundidade
+    paginaInfo.drawText(`${formatNumber(orcamento.piscina.comprimento)}m`, { x: 176, y: 463.5, size: 12, font: font, color: rgb(0, 0.059, 0.329) }); // Comprimento
+    paginaInfo.drawText(`${formatNumber(orcamento.piscina.largura)}m`, { x: 143, y: 449, size: 12, font: font, color: rgb(0, 0.059, 0.329) }); // Largura
+    paginaInfo.drawText(`${formatNumber(orcamento.piscina.profundidade)}m`, { x: 176, y: 435, size: 12, font: font, color: rgb(0, 0.059, 0.329) }); // Profundidade
     
     if (orcamento.piscina.detalhes) {
       // Quebra de linha automática para texto longo (IGUAL AO TESTE2)
@@ -328,17 +348,17 @@ async function gerarPDF(orcamento) {
           // Preço unitário e subtotal - tratamento especial para alternativos e opcionais
           let precoUnit, subtotal;
           if (item.tipo === 'Alternativo') {
-            precoUnit = `€${item.preco.toLocaleString('pt-PT', {minimumFractionDigits:2})}`;
+            precoUnit = formatPrice(item.preco);
             subtotal = 'Alternativo';
           } else if (item.tipo === 'Opcional') {
-            precoUnit = `€${item.preco.toLocaleString('pt-PT', {minimumFractionDigits:2})}`;
+            precoUnit = formatPrice(item.preco);
             subtotal = 'Opcional';
           } else if (item.tipo === 'Oferta' || item.tipo === 'oferta') {
-            precoUnit = item.preco !== undefined ? `€${item.preco.toLocaleString('pt-PT', {minimumFractionDigits:2})}` : '';
+            precoUnit = item.preco !== undefined ? formatPrice(item.preco) : '';
             subtotal = 'Oferta';
           } else {
-            precoUnit = item.preco !== undefined ? `€${item.preco.toLocaleString('pt-PT', {minimumFractionDigits:2})}` : '';
-            subtotal = `€${item.subtotal.toLocaleString('pt-PT', {minimumFractionDigits:2})}`;
+            precoUnit = formatPrice(item.preco);
+            subtotal = formatPrice(item.subtotal);
           }
           
           // Acumula subtotal da categoria e total geral (apenas itens normais)
@@ -369,7 +389,7 @@ async function gerarPDF(orcamento) {
           let tamanhoFonte = item.isAlternative || item.isOptional ? 8 : 9; // Fonte menor para alt/opt
           let corPadrao = rgb(0.1, 0.2, 0.4); // Cor padrão azul escuro para todas as colunas normais
           
-          currentPage.drawText(String(item.qtd), { x: colX.qtd, y, size: tamanhoFonte, font, color: corPadrao });
+          currentPage.drawText(formatQuantity(item.qtd), { x: colX.qtd, y, size: tamanhoFonte, font, color: corPadrao });
           const unidadeText = (item.unidade || '').toString().toLowerCase();
           currentPage.drawText(sanitizeText(unidadeText), { x: colX.unidade, y, size: tamanhoFonte, font, color: corPadrao });
           currentPage.drawText(sanitizeText(precoUnit), { x: colX.preco, y, size: tamanhoFonte, font, color: corPadrao });
@@ -416,7 +436,7 @@ async function gerarPDF(orcamento) {
         currentPage.drawText('Subtotal', {
           x: colX.preco, y: y, size: 10, font: fontBold, color: rgb(0.07,0.22,0.45)
         });
-        currentPage.drawText(`€${subtotalCategoria.toLocaleString('pt-PT', {minimumFractionDigits:2})}`, {
+        currentPage.drawText(formatPrice(subtotalCategoria), {
           x: colX.subtotal, y: y, size: 10, font: fontBold, color: rgb(0.07,0.22,0.45)
         });
         y -= 30;
@@ -488,7 +508,7 @@ async function gerarPDF(orcamento) {
         x: 350, y: y+2, size: 10, font: fontBold, color: rgb(0.07, 0.22, 0.45)
       });
       
-      currentPage.drawText(`€${subtotalSemIva.toLocaleString('pt-PT', {minimumFractionDigits:2})}`, {
+      currentPage.drawText(formatPrice(subtotalSemIva), {
         x: 470, y: y+2, size: 10, font: fontBold, color: rgb(0.07, 0.22, 0.45)
       });
       y -= 22;
@@ -506,7 +526,7 @@ async function gerarPDF(orcamento) {
         x: 350, y: y+2, size: 10, font: fontBold, color: rgb(0.059, 0.6, 0.4)
       });
       
-      currentPage.drawText(`€${ivaAmount.toLocaleString('pt-PT', {minimumFractionDigits:2})}`, {
+      currentPage.drawText(formatPrice(ivaAmount), {
         x: 470, y: y+2, size: 10, font: fontBold, color: rgb(0.059, 0.6, 0.4)
       });
       y -= 22;
@@ -529,7 +549,7 @@ async function gerarPDF(orcamento) {
         x: 350, y: y+4, size: 12, font: fontBold, color: rgb(1,1,1)
       });
       
-      currentPage.drawText(`€${totalComIva.toLocaleString('pt-PT', {minimumFractionDigits:2})}`, {
+      currentPage.drawText(formatPrice(totalComIva), {
         x: 470, y: y+4, size: 12, font: fontBold, color: rgb(1,1,1)
       });
       y -= 30;
@@ -587,7 +607,8 @@ async function exportBudgetToPDFTeste2() {
         detalhes: clientData.observations || ''
       },
       itens: [],
-      total: budgetData.total_price, // TOTAL FINAL COM MULTIPLICADORES JÁ APLICADOS
+      // TOTAL FINAL já inclui custos de transporte em budgetData.total_price
+      total: budgetData.total_price,
       data: new Date().toLocaleDateString()
     };
 

@@ -63,6 +63,10 @@ class PoolCalculator:
         ml_bordadura = comprimento + comprimento + largura + largura + (0.5 * 4)
         results['ml_bordadura'] = round(ml_bordadura, 2)
         
+        # Perímetro da piscina (necessário para cálculo do heliaço)
+        perimetro = (comprimento + largura) * 2
+        results['perimetro'] = round(perimetro, 2)
+        
         # H5 = INT((F5/(42))+1) - Rolos TL
         rolos_tl = math.floor((m2_tela / 42) + 1) if m2_tela > 0 else 0
         results['rolos_tl'] = rolos_tl
@@ -80,12 +84,13 @@ class PoolCalculator:
         
         Metodologia:
         - Fatores geométricos (forma, dimensões)
-        - Fatores de acesso e logística  
         - Fatores técnicos e tecnológicos
         - Fatores de localização e infraestrutura
         - Factor de mercado e inflação
         
-        Fórmula: Multiplicador = Base × Geo × Access × Tech × Location × Market
+        NOTA: Factor de acesso foi removido e substituído por custos específicos de transporte de areia.
+        
+        Fórmula: Multiplicador = Base × Geo × Tech × Location × Market
         """
         
         # 1. FACTOR GEOMÉTRICO (1.0 - 1.35)
@@ -113,20 +118,8 @@ class PoolCalculator:
         elif area > 60:  # Piscinas muito grandes
             geo_factor *= 1.05
         
-        # 2. FACTOR DE ACESSO E LOGÍSTICA (1.0 - 1.15) - REDUZIDO
-        access_factor = 1.0
-        
-        acesso = answers.get('acesso', 'facil')
-        access_multipliers = {
-            'facil': 1.0,      # Acesso direto com equipamentos
-            'medio': 1.04,     # +4% - reduzido ainda mais (era 1.06)
-            'dificil': 1.10    # +10% - reduzido ainda mais (era 1.15)
-        }
-        access_factor *= access_multipliers.get(acesso, 1.0)
-        
-        # Escavação afeta logística - REDUZIDO
-        if answers.get('escavacao') == 'true':
-            access_factor *= 1.02  # +2% - reduzido ainda mais (era 1.03)
+        # 2. FACTOR DE ACESSO REMOVIDO - Substituído por custos específicos de transporte
+        # Os custos de acesso difícil são agora calculados separadamente na função calculate_transport_costs()
         
         # 3. FACTOR TÉCNICO E TECNOLÓGICO (1.0 - 1.12) - REDUZIDO
         tech_factor = 1.0
@@ -144,6 +137,10 @@ class PoolCalculator:
         if answers.get('luz') == 'trifasica':
             tech_factor *= 1.03  # Instalação elétrica mais complexa
         
+        # Escavação afeta trabalho técnico
+        if answers.get('escavacao') == 'true':
+            tech_factor *= 1.02  # +2% - reduzido ainda mais (era 1.03)
+        
         # REMOVIDO: FACTOR DE LOCALIZAÇÃO - Não faz sentido económico
         # Interior vs exterior não justifica multiplicador significativo
         
@@ -151,23 +148,95 @@ class PoolCalculator:
         # Mais equilibrado considerando que produtos premium são adicionados via respostas
         market_factor = 1.05  # Reduzido (era 1.08) - mais competitivo
         
-        # CÁLCULO FINAL (sem factor de localização)
-        final_multiplier = geo_factor * access_factor * tech_factor * market_factor
+        # CÁLCULO FINAL (sem factor de localização e acesso)
+        final_multiplier = geo_factor * tech_factor * market_factor
         
-        # Limitação de segurança (não exceder 140% do custo base) - REDUZIDO AINDA MAIS
-        # Considerando que produtos premium são adicionados via respostas
-        final_multiplier = min(final_multiplier, 1.40)  # Reduzido ainda mais (era 1.60)
+        # Limitação de segurança (não exceder 125% do custo base) - REDUZIDO
+        # Considerando que custos de acesso são agora específicos
+        final_multiplier = min(final_multiplier, 1.25)  # Reduzido ainda mais (era 1.40)
         
-        # Dados para transparência (4 fatores principais)
+        # Dados para transparência (3 fatores principais)
         breakdown = {
             'geometrico': round(geo_factor, 3),
-            'acesso': round(access_factor, 3), 
             'tecnologico': round(tech_factor, 3),
             'mercado': round(market_factor, 3),
             'final': round(final_multiplier, 3)
         }
         
         return final_multiplier, breakdown
+
+    def calculate_transport_costs(self, answers, metrics):
+        """
+        Calcula custos específicos de transporte de areia baseado no nível de acesso.
+        
+        Nova lógica implementada em 2025:
+        - Acesso DIFÍCIL: 10€ por m³ de areia + 500€ de transporte fixo
+        - Acesso MÉDIO: 25% dos valores do acesso difícil (2.50€ por m³ + 125€ fixo)
+        - Acesso FÁCIL: Sem custos adicionais
+        
+        Args:
+            answers (dict): Respostas do questionário
+            metrics (dict): Métricas calculadas da piscina
+            
+        Returns:
+            dict: Custos de transporte detalhados
+        """
+        
+        acesso = answers.get('acesso', 'facil')
+        m3_massa = metrics.get('m3_massa', 0)
+        
+        # Inicializar custos
+        transport_costs = {
+            'nivel_acesso': acesso,
+            'custo_por_m3': 0.0,
+            'custo_transporte_fixo': 0.0,
+            'custo_total_m3': 0.0,
+            'custo_total': 0.0,
+            'm3_massa_usado': m3_massa,
+            'explicacao': '',
+            'breakdown': []
+        }
+        
+        if acesso == 'dificil':
+            # Acesso difícil: 10€ por m³ + 500€ fixo
+            transport_costs['custo_por_m3'] = 10.0
+            transport_costs['custo_transporte_fixo'] = 500.0
+            transport_costs['explicacao'] = 'Acesso difícil ao local da obra'
+            
+        elif acesso == 'medio':
+            # Acesso médio: 25% dos valores do acesso difícil
+            transport_costs['custo_por_m3'] = 2.5  # 25% de 10€
+            transport_costs['custo_transporte_fixo'] = 125.0  # 25% de 500€
+            transport_costs['explicacao'] = 'Acesso médio ao local da obra (25% do custo de acesso difícil)'
+            
+        else:  # facil
+            # Acesso fácil: sem custos adicionais
+            transport_costs['explicacao'] = 'Acesso fácil - sem custos adicionais de transporte'
+            
+        # Calcular custos totais
+        if m3_massa > 0:
+            transport_costs['custo_total_m3'] = round(m3_massa * transport_costs['custo_por_m3'], 2)
+        
+        transport_costs['custo_total'] = round(
+            transport_costs['custo_total_m3'] + transport_costs['custo_transporte_fixo'], 2
+        )
+        
+        # Breakdown detalhado para transparência
+        if transport_costs['custo_total'] > 0:
+            transport_costs['breakdown'] = [
+                {
+                    'descricao': f'Custo por m³ de massa ({m3_massa:.2f} m³)',
+                    'calculo': f'{m3_massa:.2f} × {transport_costs["custo_por_m3"]:.2f}€',
+                    'valor': transport_costs['custo_total_m3']
+                },
+                {
+                    'descricao': 'Custo fixo de transporte',
+                    'calculo': f'{transport_costs["custo_transporte_fixo"]:.2f}€',
+                    'valor': transport_costs['custo_transporte_fixo']
+                }
+            ]
+        
+        return transport_costs
 
     def get_multiplier_acesso(self, nivel_acesso):
         """Retorna multiplicador baseado no nível de acesso - REDUZIDO 2025"""

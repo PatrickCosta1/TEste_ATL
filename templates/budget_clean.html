@@ -1858,7 +1858,7 @@
                             Margem <span class="multiplier-tag">{{ "%.1f"|format(budget.pool_info.multiplier|default(1.0)) }}x</span>
                         </span>
                         <span class="financial-value multiplier-amount">
-                            +{{ "%.2f"|format((budget.subtotal_with_margin|default(0)) - (budget.subtotal_base|default(0))) }}€
+                            +{{ "%.2f"|format((budget.subtotal_base|default(0)) * ((budget.pool_info.multiplier|default(1.0)) - 1.0)) }}€
                         </span>
                     </div>
                     
@@ -1867,8 +1867,23 @@
                             <i class="fas fa-equals"></i>
                             Subtotal (c/ Margem)
                         </span>
-                        <span class="financial-value">{{ "%.2f"|format(budget.subtotal_with_margin|default(0)) }}€</span>
+                        <span class="financial-value">{{ "%.2f"|format(budget.subtotal_with_margin_only|default(0)) }}€</span>
                     </div>
+                    
+                    {% if budget.pool_info.transport_costs and budget.pool_info.transport_costs.custo_total > 0 %}
+                    <div class="financial-row transport-row">
+                        <span class="financial-label">
+                            <i class="fas fa-truck"></i>
+                            Transporte de Areia
+                            {% if budget.pool_info.transport_costs %}
+                                <small class="transport-detail">({{ budget.pool_info.transport_costs.explicacao }})</small>
+                            {% endif %}
+                        </span>
+                        <span class="financial-value transport-amount">
+                            +{{ "%.2f"|format(budget.pool_info.transport_costs.custo_total) }}€
+                        </span>
+                    </div>
+                    {% endif %}
                     
                     <div class="financial-row iva-row">
                         <span class="financial-label">
@@ -1891,6 +1906,69 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Explicação dos Custos de Transporte -->
+            {% if budget.pool_info.transport_costs and budget.pool_info.transport_costs.custo_total > 0 %}
+            <div class="transport-explanation-container slide-up">
+                <div class="transport-explanation-card">
+                    <div class="transport-explanation-header" onclick="toggleTransportDetails()">
+                        <div class="transport-explanation-title">
+                            <i class="fas fa-truck"></i>
+                            <span>Detalhes dos Custos de Transporte</span>
+                            <span class="transport-cost-total">+{{ "%.2f"|format(budget.pool_info.transport_costs.custo_total) }}€</span>
+                        </div>
+                        <i class="fas fa-chevron-down transport-toggle-icon" id="transport-toggle-icon"></i>
+                    </div>
+                    <div class="transport-explanation-content" id="transport-explanation-content" style="display: none;">
+                        <div class="transport-explanation-body">
+                            <div class="transport-explanation-info">
+                                <h4>Custos de Transporte de Areia</h4>
+                                <p class="transport-explanation-text">
+                                    Devido às condições de acesso ao local da obra, foram aplicados custos específicos 
+                                    para o transporte de materiais, especificamente para a areia necessária à construção.
+                                </p>
+                            </div>
+                            
+                            <div class="transport-breakdown">
+                                <h5>Breakdown dos Custos:</h5>
+                                {% for item in budget.pool_info.transport_costs.breakdown %}
+                                <div class="transport-breakdown-item">
+                                    <span class="transport-breakdown-desc">{{ item.descricao }}</span>
+                                    <span class="transport-breakdown-calc">{{ item.calculo }}</span>
+                                    <span class="transport-breakdown-value">{{ "%.2f"|format(item.valor) }}€</span>
+                                </div>
+                                {% endfor %}
+                                <div class="transport-breakdown-total">
+                                    <span class="transport-breakdown-desc"><strong>Total dos Custos de Transporte</strong></span>
+                                    <span class="transport-breakdown-value"><strong>{{ "%.2f"|format(budget.pool_info.transport_costs.custo_total) }}€</strong></span>
+                                </div>
+                            </div>
+                            
+                            <div class="transport-levels-info">
+                                <h5>Níveis de Acesso:</h5>
+                                <div class="transport-level">
+                                    <span class="transport-level-name">Acesso Fácil:</span>
+                                    <span class="transport-level-desc">Sem custos adicionais</span>
+                                </div>
+                                <div class="transport-level">
+                                    <span class="transport-level-name">Acesso Médio:</span>
+                                    <span class="transport-level-desc">2.50€ por m³ + 125€ fixo</span>
+                                </div>
+                                <div class="transport-level">
+                                    <span class="transport-level-name">Acesso Difícil:</span>
+                                    <span class="transport-level-desc">10€ por m³ + 500€ fixo</span>
+                                </div>
+                            </div>
+                            
+                            <div class="transport-explanation-note">
+                                <p><strong>Nível aplicado:</strong> {{ budget.pool_info.transport_costs.explicacao }}</p>
+                                <p><strong>Volume de massa usado:</strong> {{ "%.2f"|format(budget.pool_info.transport_costs.m3_massa_usado) }} m³</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
 
             <!-- Separador para Adicionar Produtos -->
             <div class="section-divider">
@@ -5135,6 +5213,192 @@
             font-weight: 700;
             font-size: 1.2rem;
             color: #667eea;
+        }
+
+        /* === ESTILOS PARA CUSTOS DE TRANSPORTE === */
+        .transport-row {
+            background: linear-gradient(135deg, #e0f7ff 0%, #b3f0ff 100%);
+            border-left: 3px solid #0891b2;
+            margin: 4px -8px;
+            padding: 8px 12px;
+            border-radius: 6px;
+        }
+
+        .transport-row .financial-label {
+            color: #0891b2;
+        }
+
+        .transport-row .financial-label i {
+            color: #0891b2;
+        }
+
+        .transport-amount {
+            color: #0891b2;
+            font-weight: 700;
+        }
+
+        .transport-detail {
+            display: block;
+            font-size: 0.75rem;
+            color: #0369a1;
+            font-weight: 400;
+            margin-top: 2px;
+        }
+
+        /* Estilos para a seção explicativa de transporte */
+        .transport-explanation-container {
+            margin: 1.5rem 0;
+        }
+
+        .transport-explanation-card {
+            background: linear-gradient(135deg, #ffffff, #fafafa);
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .transport-explanation-header {
+            background: linear-gradient(135deg, #0ca9d3, #0bc93cd1);
+            color: white;
+            padding: 1rem 1.25rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: background 0.3s ease;
+        }
+
+        .transport-explanation-header:hover {
+            background: linear-gradient(135deg, #0ca9d3, #0bc93cd1);
+        }
+
+        .transport-explanation-title {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .transport-explanation-title i {
+            font-size: 1.1rem;
+        }
+
+        .transport-cost-total {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+
+        .transport-toggle-icon {
+            transition: transform 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .transport-explanation-content {
+            padding: 1.5rem;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .transport-explanation-info h4 {
+            color: #424242;
+            margin: 0 0 0.75rem 0;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .transport-explanation-text {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+        }
+
+        .transport-breakdown h5 {
+            color: #0070ff;
+            margin: 0 0 1rem 0;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .transport-breakdown-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #f5f5f5;
+            font-size: 0.9rem;
+        }
+
+        .transport-breakdown-desc {
+            flex: 1;
+            color: #555;
+        }
+
+        .transport-breakdown-calc {
+            flex: 1;
+            text-align: center;
+            color: #777;
+            font-family: monospace;
+            font-size: 0.85rem;
+        }
+
+        .transport-breakdown-value {
+            font-weight: 600;
+            color: #0891b2;
+            text-align: right;
+        }
+
+        .transport-breakdown-total {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0 0 0;
+            margin-top: 0.5rem;
+            border-top: 2px solid #0070ff;
+        }
+
+        .transport-levels-info {
+            margin: 1.5rem 0;
+        }
+
+        .transport-levels-info h5 {
+            color: #0070ff;
+            margin: 0 0 1rem 0;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .transport-level {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.4rem 0;
+            font-size: 0.9rem;
+        }
+
+        .transport-level-name {
+            font-weight: 600;
+            color: #555;
+        }
+
+        .transport-level-desc {
+            color: #777;
+        }
+
+        .transport-explanation-note {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            border-left: 4px solid #0070ff;
+            margin-top: 1.5rem;
+        }
+
+        .transport-explanation-note p {
+            margin: 0.25rem 0;
+            color: #555;
+            font-size: 0.9rem;
         }
 
         /* === AÇÕES RÁPIDAS MODERNAS === */
@@ -8453,6 +8717,20 @@
             document.body.appendChild(errorDiv);
             
             setTimeout(() => errorDiv.remove(), 4000);
+        }
+
+        // Função para controlar a expansão dos detalhes de transporte
+        function toggleTransportDetails() {
+            const content = document.getElementById('transport-explanation-content');
+            const icon = document.getElementById('transport-toggle-icon');
+            
+            if (content.style.display === 'none' || content.style.display === '') {
+                content.style.display = 'block';
+                icon.style.transform = 'rotate(180deg)';
+            } else {
+                content.style.display = 'none';
+                icon.style.transform = 'rotate(0deg)';
+            }
         }
     </script>
 </body>

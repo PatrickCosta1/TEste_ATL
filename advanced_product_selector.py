@@ -19,10 +19,12 @@ class AdvancedProductSelector:
     
     def generate_budget(self, answers: Dict, metrics: Dict, dimensions: Dict) -> Dict:
         """Gera orçamento completo usando a base de dados"""
-        # Calcular multiplicador final (novo sistema)
+        # Calcular multiplicador final (novo sistema sem factor de acesso)
         final_multiplier = self.calculator.calculate_final_multiplier(answers, dimensions)
         # Obter breakdown detalhado dos multiplicadores
         multiplier_breakdown = self.calculator.get_multiplier_breakdown(answers, dimensions)
+        # Calcular custos específicos de transporte de areia (substitui multiplicador de acesso)
+        transport_costs = self.calculator.calculate_transport_costs(answers, metrics)
         # Obter dados do cliente da sessão (se disponível)
         client_data = {}
         if session:
@@ -33,7 +35,8 @@ class AdvancedProductSelector:
                 'metrics': metrics,
                 'answers': answers,
                 'multiplier': final_multiplier,
-                'multiplier_breakdown': multiplier_breakdown
+                'multiplier_breakdown': multiplier_breakdown,
+                'transport_costs': transport_costs  # Adicionar custos de transporte
             },
             'client_data': client_data,  # Adicionar dados do cliente
             'families': {},
@@ -540,8 +543,18 @@ class AdvancedProductSelector:
             # Aplicar multiplicador
             family_total_with_multiplier = family_total * final_multiplier
             budget['family_totals'][family_name] = round(family_total_with_multiplier, 2)
-        # Total geral
-        budget['total_price'] = sum(budget['family_totals'].values())
+        
+        # Total dos produtos
+        subtotal_products = sum(budget['family_totals'].values())
+        
+        # Adicionar custos de transporte de areia ao total final
+        transport_cost = transport_costs.get('custo_total', 0)
+        budget['transport_cost'] = transport_cost
+        budget['subtotal_products'] = round(subtotal_products, 2)
+        
+        # Total geral (produtos + transporte)
+        budget['total_price'] = round(subtotal_products + transport_cost, 2)
+        
         return budget
     
     def _select_filtration_products(self, conditions: Dict, metrics: Dict) -> Dict:

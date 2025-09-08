@@ -3,8 +3,10 @@ from flask import Flask, render_template, request, jsonify, session, redirect, u
 from calculator import PoolCalculator
 from advanced_product_selector import AdvancedProductSelector
 from database_manager import DatabaseManager
+from budget_cache import budget_cache
 import os
 import sys
+import json
 
 # Resolve base path: if running from PyInstaller bundle, resources are unpacked to sys._MEIPASS
 BASE_PATH = getattr(sys, '_MEIPASS', os.path.abspath(os.path.dirname(__file__)))
@@ -34,8 +36,49 @@ calculator = PoolCalculator()
 product_selector = AdvancedProductSelector()
 db_manager = DatabaseManager()
 
+def get_current_budget():
+    """Obtém o orçamento atual da sessão ou cache"""
+    # Primeiro, tentar obter da sessão (para orçamentos pequenos)
+    if 'current_budget' in session:
+        return session['current_budget']
+    
+    # Se não estiver na sessão, tentar cache
+    if 'budget_cache_id' in session:
+        cached_budget = budget_cache.get_budget(session['budget_cache_id'])
+        if cached_budget:
+            return cached_budget
+    
+    return {}
+
+def save_current_budget(budget):
+    """Salva o orçamento na sessão ou cache dependendo do tamanho"""
+    # Calcular tamanho do orçamento
+    budget_json = json.dumps(budget)
+    budget_size = len(budget_json.encode('utf-8'))
+    
+    # Se for menor que 3KB, manter na sessão
+    if budget_size < 3000:
+        session['current_budget'] = budget
+        # Limpar cache se existir
+        if 'budget_cache_id' in session:
+            del session['budget_cache_id']
+    else:
+        # Orçamento grande, usar cache
+        if 'budget_cache_id' in session:
+            # Atualizar cache existente
+            budget_cache.update_budget(session['budget_cache_id'], budget)
+        else:
+            # Criar novo cache
+            cache_id = budget_cache.store_budget(budget)
+            session['budget_cache_id'] = cache_id
+        
+        # Remover da sessão para economizar espaço
+        if 'current_budget' in session:
+            del session['current_budget']
+
 def calculate_and_update_totals(budget):
     """Calcula e atualiza os totais das famílias com valores base, multiplicador e IVA"""
+    
     if 'family_totals' not in budget:
         budget['family_totals'] = {}
     if 'family_totals_base' not in budget:
@@ -69,7 +112,8 @@ def calculate_and_update_totals(budget):
             
             # Apenas produtos incluídos contam no orçamento
             if quantity > 0 and item_type == 'incluido':
-                family_total += price * quantity
+                subtotal = price * quantity
+                family_total += subtotal
         
         if family_total > 0:
             # Armazenar valor base (sem multiplicador)
@@ -86,9 +130,16 @@ def calculate_and_update_totals(budget):
     
     # Calcular totais gerais
     budget['subtotal_base'] = sum(budget['family_totals_base'].values())
-    budget['subtotal_with_margin'] = sum(budget['family_totals'].values())
+    budget['subtotal_with_margin_only'] = sum(budget['family_totals'].values())  # Só equipamentos com margem
     
-    # Calcular IVA sobre o valor com margem
+    # Adicionar custos de transporte de areia (se existirem)
+    transport_costs = budget.get('pool_info', {}).get('transport_costs', {})
+    transport_cost = transport_costs.get('custo_total', 0) if transport_costs else 0
+    
+    # Total com margem E transporte
+    budget['subtotal_with_margin'] = budget['subtotal_with_margin_only'] + transport_cost
+    
+    # Calcular IVA sobre o valor com margem (incluindo transporte)
     budget['iva_amount'] = budget['subtotal_with_margin'] * budget['iva_rate']
     
     # Total final com IVA
@@ -322,14 +373,14 @@ def generate_budget():
             print(f"DEBUG: Families no budget: {list(budget.get('families', {}).keys())}")
             print(f"DEBUG: Total price: {budget.get('total_price', 0)}")
         
-        # Armazenar orçamento na sessão
-        session['current_budget'] = budget
-        print(f"DEBUG: Budget salvo na sessão")
+        # Armazenar orçamento na sessão usando cache inteligente
+        save_current_budget(budget)
+        print(f"DEBUG: Budget salvo (cache inteligente)")
         
         # Calcular totais base e com multiplicador
         if budget:
             calculate_and_update_totals(budget)
-            session['current_budget'] = budget
+            save_current_budget(budget)
             print(f"DEBUG: Totais calculados e atualizados")
         
         # Resposta baseada no tipo de requisição
@@ -364,16 +415,10 @@ def generate_budget():
 @app.route('/budget')
 def view_budget():
     """Visualizar e editar orçamento gerado"""
-    print(f"DEBUG: Acessando rota /budget")
-    print(f"DEBUG: current_budget na sessão: {session.get('current_budget', 'VAZIO')}")
-    print(f"DEBUG: Chaves da sessão: {list(session.keys())}")
     
-    budget = session.get('current_budget', {})
+    budget = get_current_budget()
     if not budget:
-        print("DEBUG: Sem budget na sessão, redirecionando para /")
         return redirect('/')
-    
-    print(f"DEBUG: Budget encontrado, continuando...")
     
     # Obter dados do cliente da sessão
     client_data = session.get('client_data', {})
@@ -808,16 +853,12 @@ def recalculate_budget():
     """Recalcular orçamento com novos dados de medidas e respostas do questionário"""
     try:
         data = request.get_json()
-        
-        # Obter dados da sessão
+        # Obter dados do cliente (mantemos compatibilidade com as rotas existentes)
         client_data = session.get('client_data', {})
         if not client_data:
-            return jsonify({
-                'success': False,
-                'error': 'Dados do cliente não encontrados'
-            }), 400
-            
-        # Atualizar pool_info com novos dados
+            return jsonify({'success': False, 'error': 'Dados do cliente não encontrados'}), 400
+
+        # Construir pool_info a partir do payload
         pool_info = {
             'comprimento': float(data.get('comprimento', 0)),
             'largura': float(data.get('largura', 0)),
@@ -825,19 +866,17 @@ def recalculate_budget():
             'prof_max': float(data.get('prof_max', 0)),
             'answers': data.get('answers', {})
         }
-        
-        # Calcular novos cálculos com base nas medidas
+
+        # Calcular métricas
         metrics = calculator.calculate_all_metrics(
             pool_info['comprimento'],
             pool_info['largura'],
             pool_info['prof_min'],
             pool_info['prof_max']
         )
-        
-        # Atualizar pool_info com cálculos
+
         pool_info.update(metrics)
-        
-        # Extrair answers do pool_info
+
         answers = pool_info.get('answers', {})
         dimensions = {
             'comprimento': pool_info['comprimento'],
@@ -845,19 +884,17 @@ def recalculate_budget():
             'prof_min': pool_info['prof_min'],
             'prof_max': pool_info['prof_max']
         }
-        
-        # Gerar novo orçamento
+
+        # Gerar novo orçamento usando o product_selector
         budget = product_selector.generate_budget(answers, metrics, dimensions)
-        
-        # Atualizar sessão
-        session['current_budget'] = budget
+
+        # Salvar usando cache inteligente para evitar cookie overflow
+        save_current_budget(budget)
+        # Guardar apenas métricas e dimensões curtas na sessão para rápido acesso
         session['pool_metrics'] = metrics
         session['pool_dimensions'] = dimensions
-        
-        return jsonify({
-            'success': True,
-            'message': 'Orçamento recalculado com sucesso'
-        })
+
+        return jsonify({'success': True, 'message': 'Orçamento recalculado com sucesso'})
         
     except Exception as e:
         print(f"Erro ao recalcular orçamento: {str(e)}")
@@ -870,9 +907,9 @@ def recalculate_budget():
 def get_current_answers():
     """Retorna as respostas atuais do questionário"""
     try:
-        budget = session.get('current_budget', {})
+        budget = get_current_budget()
         pool_info = budget.get('pool_info', {})
-        
+
         # Tentar obter answers de diferentes fontes
         answers = pool_info.get('answers', {})
         if not answers:
@@ -998,7 +1035,7 @@ def update_project_configuration():
     """Recebe atualização da configuração do projeto a partir do modal e atualiza o orçamento na sessão"""
     try:
         data = request.get_json() if request.is_json else request.form.to_dict()
-        budget = session.get('current_budget', {})
+        budget = get_current_budget()
 
         if 'pool_info' not in budget:
             budget['pool_info'] = {}
@@ -1007,11 +1044,25 @@ def update_project_configuration():
 
         answers = budget['pool_info']['answers']
 
-        # Campos esperados (converter tipos booleanos/numericos quando necessário)
-        fields = ['acesso','escavacao','forma','tipo_piscina','revestimento','domotica','localizacao','luz','tratamento_agua','tipo_construcao','cobertura','tipo_cobertura_laminas','casa_maquinas_abaixo']
+        # Campos esperados (todos os campos do questionário)
+        fields = [
+            'acesso', 'escavacao', 'forma', 'tipo_piscina', 'revestimento', 'domotica', 
+            'localizacao', 'luz', 'tratamento_agua', 'tipo_construcao', 'cobertura', 
+            'tipo_cobertura_laminas', 'casa_maquinas_abaixo', 'casa_maquinas_desc', 
+            'tipo_luzes', 'zona_praia', 'zona_praia_largura', 'zona_praia_comprimento',
+            'escadas', 'escadas_largura'
+        ]
+        
         for f in fields:
             if f in data:
-                answers[f] = data.get(f)
+                # Converter valores numéricos quando necessário
+                if f in ['zona_praia_largura', 'zona_praia_comprimento', 'escadas_largura']:
+                    try:
+                        answers[f] = float(data.get(f, 0)) if data.get(f) else 0
+                    except (ValueError, TypeError):
+                        answers[f] = 0
+                else:
+                    answers[f] = data.get(f)
 
         # Medidas
         dimensions = session.get('pool_dimensions', {})
@@ -1028,12 +1079,13 @@ def update_project_configuration():
         budget['pool_info']['answers'] = answers
         budget['pool_info']['dimensions'] = dimensions
         session['pool_dimensions'] = dimensions
-        session['current_budget'] = budget
+        # Salvar o orçamento usando cache inteligente
+        save_current_budget(budget)
 
         # Recalcular orcamento se a função estiver disponível
         try:
             calculate_and_update_totals(budget)
-            session['current_budget'] = budget
+            save_current_budget(budget)
         except Exception:
             pass
 
@@ -1091,13 +1143,37 @@ def update_item_type():
             'error': str(e)
         }), 400
 
+@app.route('/debug_session_size')
+def debug_session_size():
+    """Debug para verificar tamanho da sessão"""
+    import json
+    
+    session_data = dict(session)
+    session_json = json.dumps(session_data)
+    size_bytes = len(session_json.encode('utf-8'))
+    
+    # Calcular tamanho por seção
+    sizes = {}
+    for key, value in session_data.items():
+        key_json = json.dumps({key: value})
+        sizes[key] = len(key_json.encode('utf-8'))
+    
+    return jsonify({
+        'total_size_bytes': size_bytes,
+        'size_limit': 4093,
+        'over_limit': size_bytes > 4093,
+        'sections': sizes,
+        'current_budget_exists': 'current_budget' in session,
+        'families_count': len(session.get('current_budget', {}).get('families', {}))
+    })
+
 @app.route('/get_session_data')
 def get_session_data():
     """Retorna dados da sessão para exportação PDF"""
     try:
         return jsonify({
             'client_data': session.get('client_data', {}),
-            'current_budget': session.get('current_budget', {}),
+            'current_budget': get_current_budget(),
             'pool_metrics': session.get('pool_metrics', {}),
             'pool_dimensions': session.get('pool_dimensions', {})
         })
@@ -1105,6 +1181,45 @@ def get_session_data():
         return jsonify({
             'error': str(e)
         }), 400
+
+@app.route('/debug_totals')
+def debug_totals():
+    """Endpoint de debug para verificar cálculos de totais"""
+    try:
+        budget = session.get('current_budget', {})
+        if not budget:
+            return jsonify({'error': 'Nenhum orçamento na sessão'})
+        
+        debug_info = {
+            'family_totals_base': budget.get('family_totals_base', {}),
+            'family_totals': budget.get('family_totals', {}),
+            'subtotal_base': budget.get('subtotal_base', 0),
+            'subtotal_with_margin_only': budget.get('subtotal_with_margin_only', 0),
+            'subtotal_with_margin': budget.get('subtotal_with_margin', 0),
+            'transport_costs': budget.get('pool_info', {}).get('transport_costs', {}),
+            'iva_amount': budget.get('iva_amount', 0),
+            'total_with_iva': budget.get('total_with_iva', 0),
+            'total_price': budget.get('total_price', 0),
+            'multiplier': budget.get('pool_info', {}).get('multiplier', 1.0),
+            'produtos_incluidos': []
+        }
+        
+        # Listar produtos incluídos para verificar o que está sendo contado
+        products_data = budget.get('selected_products', budget.get('families', {}))
+        for family, products in products_data.items():
+            for product_id, product in products.items():
+                if product.get('quantity', 0) > 0 and product.get('item_type') == 'incluido':
+                    debug_info['produtos_incluidos'].append({
+                        'family': family,
+                        'name': product.get('name', ''),
+                        'quantity': product.get('quantity', 0),
+                        'price': product.get('price', 0),
+                        'subtotal': product.get('price', 0) * product.get('quantity', 0)
+                    })
+        
+        return jsonify(debug_info)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
 
 @app.route('/replace_product', methods=['POST'])
 def replace_product():
@@ -1612,11 +1727,19 @@ def add_product():
     """Adiciona um novo produto ao orçamento"""
     try:
         data = request.get_json() if request.is_json else request.form.to_dict()
-        budget = session.get('current_budget', {})
+        budget = get_current_budget()
+        
+        print(f"\n=== DEBUG ADD_PRODUCT ===")
+        print(f"Data recebida: {data}")
+        print(f"Budget atual existe: {bool(budget)}")
         
         product_id = data.get('product_id')
         item_type = data.get('item_type', 'incluido')  # incluido, opcional, alternativo
         alternative_to = data.get('alternative_to', None)  # Para produtos alternativos
+        
+        print(f"Product ID: {product_id}")
+        print(f"Item Type: {item_type}")
+        print(f"Alternative To: {alternative_to}")
         
         if not product_id:
             return jsonify({'success': False, 'error': 'ID do produto é obrigatório'})
@@ -1626,8 +1749,8 @@ def add_product():
         if not product:
             return jsonify({'success': False, 'error': 'Produto não encontrado'})
         
-        # Debug: ver estrutura do produto
-        print(f"DEBUG add_product - Produto encontrado: {product}")
+        print(f"Produto encontrado: {product.get('name', 'Sem nome')}")
+        print(f"Família do produto: {product.get('family_name', 'Sem família')}")
         
         # Determinar a família do produto (normalizar nomes para evitar fallback indevido)
         family_name = product.get('family_name', '') or ''
@@ -1715,31 +1838,51 @@ def add_product():
         alternative_to_product = None
         alternative_to_key = None
         if item_type == 'alternativo' and alternative_to:
+            print(f"Processando produto alternativo...")
+            print(f"Procurando produto principal com ID/key: {alternative_to}")
+            
             # Procurar o produto principal em todas as famílias.
             # Accept both full keys (e.g. 'filter_123') or raw numeric IDs ('123').
             alt_str = str(alternative_to)
             for fam_name, fam_products in budget.get('families', {}).items():
+                print(f"  Verificando família {fam_name} com {len(fam_products)} produtos")
+                
                 # 1) Match by exact key
                 if alt_str in fam_products:
                     alternative_to_key = alt_str
                     alternative_to_product = fam_products[alt_str]
+                    print(f"  ✓ Encontrado por chave exata: {alt_str}")
                     break
 
                 # 2) Match by raw id inside product entries
                 for existing_key, existing_prod in fam_products.items():
                     try:
                         existing_id = str(existing_prod.get('id', ''))
+                        existing_product_id = str(existing_prod.get('product_id', ''))
                     except Exception:
                         existing_id = ''
-                    if existing_id and existing_id == alt_str:
+                        existing_product_id = ''
+                    
+                    if (existing_id and existing_id == alt_str) or (existing_product_id and existing_product_id == alt_str):
                         alternative_to_key = existing_key
                         alternative_to_product = existing_prod
+                        print(f"  ✓ Encontrado por ID interno: {existing_key} (ID: {existing_id}, Product ID: {existing_product_id})")
                         break
                 if alternative_to_product:
                     break
+            
+            if not alternative_to_product:
+                print(f"  ❌ Produto principal não encontrado!")
+                print(f"  Produtos disponíveis no budget:")
+                for fam_name, fam_products in budget.get('families', {}).items():
+                    for prod_key, prod_data in fam_products.items():
+                        print(f"    {fam_name}.{prod_key}: ID={prod_data.get('id', 'N/A')}, Name={prod_data.get('name', 'N/A')}")
+            else:
+                print(f"  ✓ Produto principal encontrado: {alternative_to_product.get('name', 'Sem nome')}")
         
         # Definir quantidade baseada no tipo
         quantity = 1 if item_type in ['incluido', 'alternativo'] else 0
+        print(f"Quantidade definida: {quantity}")
         
         # Adicionar o novo produto
         product_data = {
@@ -1752,19 +1895,25 @@ def add_product():
             'reasoning': f'Produto adicionado manualmente pelo comercial'
         }
         
+        print(f"Dados do produto criado: {product_data}")
+        
         # Se for alternativo, armazenar a chave correta (product key) da referência
         if item_type == 'alternativo' and alternative_to:
             # Preferir a chave completa encontrada; se não, tentar usar o valor passado
             if alternative_to_key:
                 product_data['alternative_to'] = alternative_to_key
+                print(f"Definindo alternative_to como chave: {alternative_to_key}")
             else:
                 # armazenar como string — pode ainda ser resolvido em fluxos posteriores
                 product_data['alternative_to'] = str(alternative_to)
+                print(f"Definindo alternative_to como string: {alternative_to}")
 
             if alternative_to_product:
                 product_data['alternative_to_name'] = alternative_to_product.get('name', 'Produto Principal')
+                print(f"Nome do produto principal: {product_data['alternative_to_name']}")
         
         budget['families'][mapped_family][product_key] = product_data
+        print(f"Produto adicionado à família {mapped_family} com chave {product_key}")
         
         # Recalcular totais excluindo alternativos
         family_total = sum(
@@ -1772,10 +1921,16 @@ def add_product():
             if p['quantity'] > 0 and p.get('item_type', 'incluido') in ['incluido', 'opcional']
         )
         
+        print(f"Total da família {mapped_family} (antes recalcular): {family_total}")
+        
         # Recalcular totais usando a nova função
         calculate_and_update_totals(budget)
         
-        session['current_budget'] = budget
+        print(f"Total do orçamento após recalcular: {budget.get('total_price', 0)}")
+        
+        save_current_budget(budget)
+        print(f"Budget salvo (cache inteligente)")
+        print(f"=== FIM DEBUG ADD_PRODUCT ===\n")
         
         return jsonify({
             'success': True,
