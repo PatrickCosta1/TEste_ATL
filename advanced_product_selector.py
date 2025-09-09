@@ -427,6 +427,9 @@ class AdvancedProductSelector:
         # Selecionar produtos de construção da piscina
         construcao = self._select_construction_products(conditions, dimensions, metrics, answers)
 
+        # Selecionar produtos de construção da laje
+        construcao_laje = self._select_laje_products(answers, dimensions)
+
         # ORDEM FILTRACAO
         filtracao_order = ['filter', 'valve', 'pump', 'vidro', 'quadro']
         def filtracao_sort_key(k):
@@ -516,11 +519,12 @@ class AdvancedProductSelector:
             'tratamento_agua': 'Tratamento de Água',
             'revestimento': 'Revestimento',
             'aquecimento': 'Aquecimento',
-            'construcao': 'Construção da Piscina'
+            'construcao': 'Construção da Piscina',
+            'construcao_laje': 'Construção da Laje'
         }
 
         # Para cada família interna, aplicar swap se necessário e manter a chave interna
-        for fam_name, fam_dict in [('filtracao', filtracao_sorted), ('recirculacao_iluminacao', recirculacao_sorted), ('tratamento_agua', tratamento_agua), ('revestimento', revestimento), ('aquecimento', aquecimento), ('construcao', construcao)]:
+        for fam_name, fam_dict in [('filtracao', filtracao_sorted), ('recirculacao_iluminacao', recirculacao_sorted), ('tratamento_agua', tratamento_agua), ('revestimento', revestimento), ('aquecimento', aquecimento), ('construcao', construcao), ('construcao_laje', construcao_laje)]:
             if fam_dict:
                 selected_key = None
                 previous_key = None
@@ -1776,8 +1780,9 @@ class AdvancedProductSelector:
             # Verificar se a localidade precisa ser mapeada para um grupo
             localidade_para_preco = mapeamento_localidades.get(localidade, localidade)
             
+            preco_custo = 0
             if localidade_para_preco in regiao_precos:
-                return regiao_precos[localidade_para_preco].get(product_name, 0)
+                preco_custo = regiao_precos[localidade_para_preco].get(product_name, 0)
             else:
                 # Calcular média de todas as regiões
                 total = 0
@@ -1786,7 +1791,11 @@ class AdvancedProductSelector:
                     if product_name in region_prices:
                         total += region_prices[product_name]
                         count += 1
-                return total / count if count > 0 else 0
+                preco_custo = total / count if count > 0 else 0
+            
+            # CORREÇÃO: Converter preço de custo para preço de venda (× 100/60)
+            preco_venda = preco_custo * 100 / 60
+            return round(preco_venda, 2)
         
         # Obter métricas calculadas
         m2_paredes = metrics.get('m2_paredes', 0)
@@ -1977,3 +1986,113 @@ class AdvancedProductSelector:
             }
         
         return construcao
+
+    def _select_laje_products(self, answers: Dict, dimensions: Dict) -> Dict:
+        """Seleciona produtos de construção da laje baseado nas respostas do questionário"""
+        import math
+        
+        construcao_laje = {}
+        
+        # Verificar se haverá laje
+        havera_laje = answers.get('havera_laje', 'nao')
+        if havera_laje != 'sim':
+            return construcao_laje
+        
+        # Obter dados da laje
+        try:
+            laje_m2 = float(answers.get('laje_m2', 0))
+            laje_espessura = float(answers.get('laje_espessura', 0))  # Já em metros (0.10 ou 0.15)
+        except (ValueError, TypeError):
+            return construcao_laje
+        
+        if laje_m2 <= 0 or laje_espessura <= 0:
+            return construcao_laje
+        
+        # Converter espessura para centímetros para exibição
+        laje_espessura_cm = int(laje_espessura * 100)
+        
+        # Calcular m³ da laje
+        laje_m3 = laje_m2 * laje_espessura
+        
+        # Definir preços dos materiais de revestimento
+        precos_revestimento = {
+            'granito_vila_real': 35.0,
+            'granito_pedras_salgadas': 35.0,
+            'granito_preto_angola': 90.0,
+            'granito_preto_zimbabue': 140.0,
+            'marmore_branco_ibiza': 90.0,
+            'travertino_turco': 90.0,
+            'pedra_hijau': 40.0  # cerâmico
+        }
+        
+        # Nomes dos materiais
+        nomes_materiais = {
+            'granito_vila_real': 'Granito Vila Real',
+            'granito_pedras_salgadas': 'Granito Pedras Salgadas',
+            'granito_preto_angola': 'Granito Preto Angola',
+            'granito_preto_zimbabue': 'Granito Preto Zimbabue',
+            'marmore_branco_ibiza': 'Mármore Branco Ibiza',
+            'travertino_turco': 'Travertino Turco',
+            'pedra_hijau': 'Pedra Hijau'
+        }
+        
+        # Tipos de material (para diferenciação futura)
+        tipos_materiais = {
+            'granito_vila_real': 'natural',
+            'granito_pedras_salgadas': 'natural',
+            'granito_preto_angola': 'natural',
+            'granito_preto_zimbabue': 'natural',
+            'marmore_branco_ibiza': 'natural',
+            'travertino_turco': 'natural',
+            'pedra_hijau': 'ceramico'
+        }
+        
+        # Item 1: Pavimento térreo
+        # Preço = (70 × m³ + 10 × m²) × 100/60
+        preco_pavimento_custo = 70 * laje_m3 + 10 * laje_m2
+        # Converter de preço de custo para preço de venda (× 100/60)
+        preco_pavimento_venda = preco_pavimento_custo * 100 / 60
+        
+        construcao_laje['pavimento_terreo'] = {
+            'name': f'Fornecimento e execução do pavimento térreo com {laje_espessura_cm}cm de espessura, através de enchimento e espalhamento de brita com diâmetro de 12mm a 20mm, colocação de camada de compressão em betão e todos os trabalhos e materiais para o seu perfeito acabamento.',
+            'price': round(preco_pavimento_venda, 2),
+            'quantity': 1,
+            'unit': 'un',
+            'item_type': 'incluido',
+            'reasoning': f'Laje de {laje_m2:.2f}m² × {laje_espessura_cm}cm: (70 × {laje_m3:.3f} + 10 × {laje_m2:.2f}) × 100/60',
+            'can_change_type': True
+        }
+        
+        # Item 2: Revestimento (se aplicável)
+        revestimento_laje = answers.get('revestimento_laje', 'nao')
+        if revestimento_laje == 'sim':
+            material_escolhido = answers.get('material_revestimento', '')
+            
+            if material_escolhido and material_escolhido in precos_revestimento:
+                preco_material = precos_revestimento[material_escolhido]
+                nome_material = nomes_materiais[material_escolhido]
+                tipo_material = tipos_materiais[material_escolhido]
+                
+                # Preço = (15 + 13 + preço_material) × m² × 100/60
+                preco_revestimento_custo = (15 + 13 + preco_material) * laje_m2
+                preco_revestimento_venda = preco_revestimento_custo * 100 / 60
+                
+                # Ajustar nome do produto baseado no tipo
+                if tipo_material == 'ceramico':
+                    nome_produto = f'Revestimento da laje em cerâmica - {nome_material}'
+                else:
+                    nome_produto = f'Revestimento da laje em pedra natural - {nome_material}'
+                
+                construcao_laje['revestimento_laje'] = {
+                    'name': nome_produto,
+                    'price': round(preco_revestimento_venda, 2),
+                    'quantity': 1,
+                    'unit': 'un',
+                    'item_type': 'incluido',
+                    'reasoning': f'Revestimento {laje_m2:.2f}m² com {nome_material}: (15 + 13 + {preco_material}) × {laje_m2:.2f} × 100/60',
+                    'can_change_type': True,
+                    'material_type': tipo_material,
+                    'material_price_per_m2': preco_material
+                }
+        
+        return construcao_laje

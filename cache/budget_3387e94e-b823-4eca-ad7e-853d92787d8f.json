@@ -1,0 +1,532 @@
+{
+  "timestamp": "2025-09-09T16:13:31.764621",
+  "budget": {
+    "pool_info": {
+      "dimensions": {
+        "comprimento": 8.0,
+        "largura": 4.0,
+        "prof_min": 1.0,
+        "prof_max": 1.5
+      },
+      "metrics": {
+        "prof_media": 1.25,
+        "volume": 40.0,
+        "m3_h": 10.0,
+        "m3_massa": 10.34,
+        "m2_fundo": 36.96,
+        "m2_paredes": 30.0,
+        "m2_tela": 72.6,
+        "ml_bordadura": 26.0,
+        "perimetro": 24.0,
+        "rolos_tl": 2,
+        "rolos_3d": 3
+      },
+      "answers": {
+        "acesso": "facil",
+        "escavacao": "false",
+        "forma": "standard",
+        "tipo_piscina": "skimmer",
+        "revestimento": "tela",
+        "domotica": "true",
+        "localizacao": "exterior",
+        "luz": "trifasica",
+        "tratamento_agua": "clorador_salino_ph_uv",
+        "tipo_construcao": "nova",
+        "cobertura": "barras",
+        "tipo_cobertura_laminas": "",
+        "zona_praia": "sim",
+        "zona_praia_largura": 1,
+        "zona_praia_comprimento": 4,
+        "escadas": "sim",
+        "escadas_largura": 1,
+        "casa_maquinas_abaixo": "nao",
+        "casa_maquinas_desc": "",
+        "tipo_luzes": "rgb",
+        "havera_laje": "sim",
+        "laje_m2": 10,
+        "laje_espessura": 0.1,
+        "revestimento_laje": "sim",
+        "material_revestimento": "granito_preto_zimbabue"
+      },
+      "multiplier": 1.1247600000000002,
+      "multiplier_breakdown": {
+        "geometrico": 1.0,
+        "tecnologico": 1.071,
+        "mercado": 1.05,
+        "final": 1.125
+      },
+      "transport_costs": {
+        "nivel_acesso": "facil",
+        "custo_por_m3": 0.0,
+        "custo_transporte_fixo": 0.0,
+        "custo_total_m3": 0.0,
+        "custo_total": 0.0,
+        "m3_massa_usado": 10.34,
+        "explicacao": "Acesso fácil - sem custos adicionais de transporte",
+        "breakdown": []
+      }
+    },
+    "client_data": {
+      "clientName": "Patrick Costa",
+      "commercialName": "Rui Vaz",
+      "date": "2025-09-09",
+      "localidade": "Estarreja",
+      "localidade_outro": "",
+      "observations": "",
+      "proposalNumber": "PO 001"
+    },
+    "families": {
+      "filtracao": {
+        "filter_01_3": {
+          "name": "Filtro Aster Astralpool - D.600 14m3/h",
+          "price": 676,
+          "quantity": 1,
+          "unit": "un",
+          "item_type": "incluido",
+          "reasoning": "Filtro selecionado para piscina exterior com capacidade 10.0 m³/h",
+          "can_change_type": true,
+          "product_id": 3
+        },
+        "valve_01_101": {
+          "name": "Válvula Selectora Automatica - iWash by aquark",
+          "price": 999,
+          "quantity": 1,
+          "unit": "un",
+          "item_type": "incluido",
+          "reasoning": "Válvula automática para integração domótica",
+          "can_change_type": true,
+          "product_id": 101
+        },
+        "valve_02_100": {
+          "name": "Válvula Selectora Manual (ALTERNATIVO)",
+          "price": 99,
+          "quantity": 1,
+          "unit": "un",
+          "item_type": "alternativo",
+          "reasoning": "Alternativa manual",
+          "can_change_type": true,
+          "product_id": 100,
+          "alternative_to": "valve_01_101"
+        },
+        "pump_01_18": {
+          "name": "Bomba de filtração Vitoria Plus Silent Astralpool - 0,75HP(T) 11m3/h",
+          "price": 612,
+          "quantity": 1,
+          "unit": "un",
+          "item_type": "incluido",
+          "reasoning": "Bomba padrão: 11m³/h (trifasica)",
+          "can_change_type": true,
+          "product_id": 18
+        },
+        "vidro_fino_23_filter_01_3": {
+          "name": "Vidro granulado ionizado ativado - granulometria 0,4-1,0mm (Sacos de 20kg)",
+          "price": 29.9,
+          "quantity": 4,
+          "unit": "saco",
+          "item_type": "incluido",
+          "reasoning": "Vidro filtrante fino: 4 sacos (70% do total de vidro)",
+          "can_change_type": false,
+          "product_id": 23
+        },
+        "vidro_grosso_24_filter_01_3": {
+          "name": "Vidro granulado ionizado ativado - granulometria 1,5-3,0mm (Sacos de 20kg)",
+          "price": 29.9,
+          "quantity": 2,
+          "unit": "saco",
+          "item_type": "incluido",
+          "reasoning": "Vidro filtrante grosso: 2 sacos (30% do total de vidro)",
+          "can_change_type": false,
+          "product_id": 24
+        },
+        "areia_fina_74_filter_01_3": {
+          "name": "Areia Sílica 0,6-1,2mm (25kg)",
+          "price": 7.5,
+          "quantity": 4,
+          "unit": "saco",
+          "item_type": "alternativo",
+          "reasoning": "Alternativa ao vidro filtrante fino: 4 sacos (areia fina)",
+          "alternative_to": "vidro_fino_23_filter_01_3",
+          "can_change_type": false,
+          "product_id": 74
+        },
+        "areia_grossa_75_filter_01_3": {
+          "name": "Areia Sílica Grossa (25kg)",
+          "price": 7.5,
+          "quantity": 2,
+          "unit": "saco",
+          "item_type": "alternativo",
+          "reasoning": "Alternativa ao vidro filtrante grosso: 2 sacos (areia grossa)",
+          "alternative_to": "vidro_grosso_24_filter_01_3",
+          "can_change_type": false,
+          "product_id": 75
+        }
+      },
+      "recirculacao_iluminacao": {
+        "skimmer_35": {
+          "name": "Skimmer Linha de água Branco Liner",
+          "price": 210,
+          "quantity": 2,
+          "unit": "un",
+          "item_type": "incluido",
+          "reasoning": "Skimmers para piscina skimmer 4.0m de largura",
+          "can_change_type": true
+        },
+        "boca_impulsao_43": {
+          "name": "Boca de Impulsão de parede Astralpool Liner",
+          "price": 14.25,
+          "quantity": 3,
+          "unit": "un",
+          "item_type": "incluido",
+          "reasoning": "Bocas de impulsão para piscina 4.0m de largura",
+          "can_change_type": true
+        },
+        "tomada_aspiracao_51": {
+          "name": "Tomada de Aspiração Astralpool Liner",
+          "price": 23.3,
+          "quantity": 1,
+          "unit": "un",
+          "item_type": "incluido",
+          "reasoning": "Tomada de aspiração padrão",
+          "can_change_type": true
+        },
+        "passamuros_54": {
+          "name": "Passamuros Astralpool Liner",
+          "price": 13.9,
+          "quantity": 4,
+          "unit": "un",
+          "item_type": "incluido",
+          "reasoning": "Passamuros para instalação (4 unidades)",
+          "can_change_type": true
+        },
+        "regulador_nivel_58": {
+          "name": "Regulador de Nível Astralpool",
+          "price": 199,
+          "quantity": 1,
+          "unit": "un",
+          "item_type": "incluido",
+          "reasoning": "Regulador de nível para piscina skimmer",
+          "can_change_type": true
+        },
+        "regulador_pack_boca_43": {
+          "name": "    [Pack] Boca de Impulsão de parede Astralpool Liner (Pack Regulador)",
+          "price": 14.25,
+          "quantity": 1,
+          "unit": "un",
+          "item_type": "incluido",
+          "reasoning": "Boca impulsão adicional para regulador de nível",
+          "can_change_type": false,
+          "pack_parent": "regulador_nivel_58",
+          "is_pack_item": true,
+          "pack_style": "indented"
+        },
+        "regulador_pack_passamuro_54": {
+          "name": "    [Pack] Passamuros Astralpool Liner (Pack Regulador)",
+          "price": 13.9,
+          "quantity": 1,
+          "unit": "un",
+          "item_type": "incluido",
+          "reasoning": "Passamuro adicional para regulador de nível",
+          "can_change_type": false,
+          "pack_parent": "regulador_nivel_58",
+          "is_pack_item": true,
+          "pack_style": "indented"
+        },
+        "ralo_fundo_60": {
+          "name": "Ralo de fundo Kripsol Liner",
+          "price": 46.35,
+          "quantity": 1,
+          "unit": "un",
+          "item_type": "incluido",
+          "reasoning": "Ralo de fundo para piscina 32.0m² (tela)",
+          "can_change_type": true
+        },
+        "iluminacao_72": {
+          "name": "Projector Led Luz RGB de 100mm",
+          "price": 423,
+          "quantity": 3,
+          "unit": "un",
+          "item_type": "incluido",
+          "reasoning": "Iluminação para piscina 8.0x4.0m (rgb)",
+          "can_change_type": true
+        }
+      },
+      "tratamento_agua": {
+        "sal_granulado_refinado": {
+          "name": "Sal Granulado Refinado",
+          "price": 9.9,
+          "quantity": 10,
+          "unit": "un",
+          "item_type": "incluido",
+          "reasoning": "Quantidade calculada para 40.0 m³ de piscina",
+          "can_change_type": false
+        },
+        "mr_pure": {
+          "name": "Mr. Pure 50m3 By Aquark",
+          "price": 1750,
+          "quantity": 1,
+          "unit": "un",
+          "item_type": "incluido",
+          "reasoning": "Clorador salino + PH selecionado para 40.0 m³",
+          "can_change_type": false
+        },
+        "uv_titan": {
+          "name": "Sistema UV-C Titan 40w 18m3/h By Filtreau",
+          "price": 890,
+          "quantity": 1,
+          "unit": "un",
+          "item_type": "incluido",
+          "reasoning": "Sistema UV selecionado para 10.0 m³/h",
+          "can_change_type": false
+        },
+        "protecao_anodica": {
+          "name": "Proteção Anódica",
+          "price": 99,
+          "quantity": 1,
+          "unit": "un",
+          "item_type": "incluido",
+          "reasoning": "Proteção anódica incluída com clorador salino + PH + UV",
+          "can_change_type": false
+        }
+      },
+      "revestimento": {
+        "tela_armada": {
+          "name": "Revestimento Tela Armada 3D Unicolor CGT",
+          "price": 1799.8,
+          "quantity": 2,
+          "unit": "Vg",
+          "item_type": "incluido",
+          "reasoning": "Quantidade calculada: 2 rolos de 25m cada",
+          "can_change_type": true,
+          "alternatives": [
+            {
+              "id": 95,
+              "name": "Revestimento Tela Armada 3D CGT",
+              "price": 2428.8
+            },
+            {
+              "id": 96,
+              "name": "Revestimento Tela Armada Lisa CGT",
+              "price": 1760
+            }
+          ],
+          "product_id": 94
+        },
+        "perfil": {
+          "name": "Perfil Horizontal de Fixação (2ml)",
+          "price": 5.25,
+          "quantity": 13,
+          "unit": "un",
+          "item_type": "incluido",
+          "reasoning": "Perfil horizontal: 13 un (2ml cada)",
+          "can_change_type": true,
+          "alternatives": [
+            {
+              "id": 99,
+              "name": "Chapa Colaminada",
+              "price": 7.5
+            }
+          ],
+          "product_id": 97
+        },
+        "chapa_colaminada": {
+          "name": "Chapa Colaminada",
+          "price": 7.5,
+          "quantity": 13,
+          "unit": "un",
+          "item_type": "alternativo",
+          "reasoning": "Alternativa à horizontal: 13 un (2ml cada)",
+          "alternative_to": "perfil",
+          "can_change_type": false,
+          "product_id": 99
+        }
+      },
+      "aquecimento": {
+        "bomba_calor_104": {
+          "name": "Mr. Comfort 90M (9kW, 20-50m3)",
+          "price": 1813.62,
+          "quantity": 1,
+          "unit": "UN",
+          "item_type": "incluido",
+          "reasoning": "Bomba de calor selecionada para piscina de 40.0 m³",
+          "can_change_type": true,
+          "editable_price": false,
+          "editable_name": false
+        },
+        "bomba_calor_fairland_109": {
+          "name": "Fairland InverX20 X20-14 (14kW, 30-50m³)",
+          "price": 2900,
+          "quantity": 1,
+          "unit": "UN",
+          "item_type": "alternativo",
+          "alternative_to": "bomba_calor_104",
+          "reasoning": "Bomba de calor Fairland - Gama Superior alternativa para piscina de 40.0 m³",
+          "can_change_type": true,
+          "editable_price": false,
+          "editable_name": false
+        }
+      },
+      "construcao": {
+        "bloco_cofragem": {
+          "name": "Bloco Cofragem 50x20x20",
+          "price": 1.84,
+          "quantity": 300,
+          "unit": "un",
+          "item_type": "incluido",
+          "reasoning": "10 blocos por m² de parede (30.00 m²)",
+          "can_change_type": true
+        },
+        "bloco_normal": {
+          "name": "Bloco Normal 50x20x20",
+          "price": 1.57,
+          "quantity": 17,
+          "unit": "un",
+          "item_type": "incluido",
+          "reasoning": "Para escadas: (1/0,2) × ((1.0-0,3)/0,2)",
+          "can_change_type": true
+        },
+        "cimento": {
+          "name": "Cimento Cimpor 32,5R",
+          "price": 6.44,
+          "quantity": 103.4,
+          "unit": "un",
+          "item_type": "incluido",
+          "reasoning": "10 sacos por m³ de massa (10.34 m³)",
+          "can_change_type": true
+        },
+        "mistura": {
+          "name": "Mistura",
+          "price": 51.42,
+          "quantity": 10.34,
+          "unit": "m3",
+          "item_type": "incluido",
+          "reasoning": "1 m³ por m³ de massa (10.34 m³)",
+          "can_change_type": true
+        },
+        "malha_eletrosoldada": {
+          "name": "Malha Eletrosoldada 6mm",
+          "price": 4.55,
+          "quantity": 30.0,
+          "unit": "m2",
+          "item_type": "incluido",
+          "reasoning": "Igual a m² de paredes (30.00 m²)",
+          "can_change_type": true
+        },
+        "heliaco": {
+          "name": "Heliaço 10mm 6m",
+          "price": 6.04,
+          "quantity": 100,
+          "unit": "un",
+          "item_type": "incluido",
+          "reasoning": "Barras verticais: 40.0 + Barras horizontais: 60.0",
+          "can_change_type": true
+        },
+        "arame_queimado": {
+          "name": "Arame Queimado",
+          "price": 2.5,
+          "quantity": 2,
+          "unit": "kg",
+          "item_type": "incluido",
+          "reasoning": "Quantidade fixa: 2 kg",
+          "can_change_type": true
+        },
+        "meia_areia": {
+          "name": "Meia Areia",
+          "price": 50.08,
+          "quantity": 1,
+          "unit": "m3",
+          "item_type": "incluido",
+          "reasoning": "Quantidade fixa: 1 m³",
+          "can_change_type": true
+        },
+        "reboco_exterior": {
+          "name": "Reboco Exterior Cinza",
+          "price": 4.46,
+          "quantity": 18.0,
+          "unit": "un",
+          "item_type": "incluido",
+          "reasoning": "0,6 sacos por m² de parede (30.00 m²)",
+          "can_change_type": true
+        },
+        "vigas": {
+          "name": "Viga",
+          "price": 4.54,
+          "quantity": 8.692307692307692,
+          "unit": "m",
+          "item_type": "incluido",
+          "reasoning": "Zona praia: ((4.0/0,52)+1) × 1",
+          "can_change_type": true
+        },
+        "abobadilhas": {
+          "name": "Abobadilhas 40cm",
+          "price": 1.13,
+          "quantity": 21.73076923076923,
+          "unit": "un",
+          "item_type": "incluido",
+          "reasoning": "(1/0,40) × 8.7 vigas",
+          "can_change_type": true
+        },
+        "tela_pitonada": {
+          "name": "Tela Pitonada",
+          "price": 1.5,
+          "quantity": 30.0,
+          "unit": "m2",
+          "item_type": "incluido",
+          "reasoning": "Perímetro × prof. média: 24.00 × 1.25",
+          "can_change_type": true
+        },
+        "brita_n2": {
+          "name": "Brita nº2",
+          "price": 49.79,
+          "quantity": 2,
+          "unit": "m3",
+          "item_type": "incluido",
+          "reasoning": "M² fundo × 0,05: 36.96 × 0,05 (arredondado)",
+          "can_change_type": true
+        }
+      },
+      "construcao_laje": {
+        "pavimento_terreo": {
+          "name": "Fornecimento e execução do pavimento térreo com 10cm de espessura, através de enchimento e espalhamento de brita com diâmetro de 12mm a 20mm, colocação de camada de compressão em betão e todos os trabalhos e materiais para o seu perfeito acabamento.",
+          "price": 283.33,
+          "quantity": 1,
+          "unit": "un",
+          "item_type": "incluido",
+          "reasoning": "Laje de 10.00m² × 10cm: (70 × 1.000 + 10 × 10.00) × 100/60",
+          "can_change_type": true
+        },
+        "revestimento_laje": {
+          "name": "Revestimento da laje em pedra natural - Granito Preto Zimbabue",
+          "price": 2800.0,
+          "quantity": 1,
+          "unit": "un",
+          "item_type": "incluido",
+          "reasoning": "Revestimento 10.00m² com Granito Preto Zimbabue: (15 + 13 + 140.0) × 10.00 × 100/60",
+          "can_change_type": true,
+          "material_type": "natural",
+          "material_price_per_m2": 140.0
+        }
+      }
+    },
+    "family_totals": {
+      "filtracao": 2774.11,
+      "recirculacao_iluminacao": 2344.17,
+      "tratamento_agua": 3192.07,
+      "revestimento": 4125.45,
+      "aquecimento": 2039.89,
+      "construcao": 3217.63,
+      "construcao_laje": 3468.01
+    },
+    "total_price": 21161.33,
+    "family_display_map": {
+      "filtracao": "Filtração",
+      "recirculacao_iluminacao": "Recirculação e Iluminação",
+      "tratamento_agua": "Tratamento de Água",
+      "revestimento": "Revestimento",
+      "aquecimento": "Aquecimento",
+      "construcao": "Construção da Piscina",
+      "construcao_laje": "Construção da Laje"
+    },
+    "transport_cost": 0.0,
+    "subtotal_products": 21161.33
+  }
+}

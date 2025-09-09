@@ -1592,7 +1592,7 @@
             </div>
 
             <!-- Produtos por Família - DESIGN COMPACTO -->
-            {% set family_order = ['filtracao', 'recirculacao_iluminacao', 'tratamento_agua', 'revestimento', 'aquecimento', 'construcao'] %}
+            {% set family_order = ['filtracao', 'recirculacao_iluminacao', 'tratamento_agua', 'revestimento', 'aquecimento', 'construcao', 'construcao_laje'] %}
             {% for family_name in family_order %}
             {% if family_name in budget.get('families', {}) %}
             {% set family_products = budget.get('families', {})[family_name] %}
@@ -1619,6 +1619,7 @@
                             {% elif family_name == 'acessorios' %}fa-wrench
                             {% elif family_name == 'recirculacao_iluminacao' %}fa-water
                             {% elif family_name == 'construcao' %}fa-hammer
+                            {% elif family_name == 'construcao_laje' %}fa-layer-group
                             {% else %}fa-cog{% endif %}"></i>
                         {{ family_name|family_display_name }}
                     </div>
@@ -7276,15 +7277,27 @@
             .catch(error => {
                 console.error('Erro ao buscar respostas:', error);
                 // Usar valores padrão em caso de erro
+                // Capturar os valores reais do orçamento
                 const currentAnswers = {
-                    acesso: 'facil',
-                    escavacao: 'mecanica',
-                    forma: 'retangular',
-                    tipo_piscina: 'skimmer',
-                    revestimento: 'vinil',
-                    domotica: 'nao',
-                    localizacao: 'exterior',
-                    luz: 'led'
+                    acesso: '{{ budget.pool_info.get("answers", {}).get("acesso", budget.pool_info.get("acesso", "facil")) }}',
+                    escavacao: '{{ budget.pool_info.get("answers", {}).get("escavacao", budget.pool_info.get("escavacao", "mecanica")) }}',
+                    forma: '{{ budget.pool_info.get("answers", {}).get("forma", budget.pool_info.get("forma", "retangular")) }}',
+                    tipo_piscina: '{{ budget.pool_info.get("answers", {}).get("tipo_piscina", budget.pool_info.get("tipo_piscina", "skimmer")) }}',
+                    revestimento: '{{ budget.pool_info.get("answers", {}).get("revestimento", budget.pool_info.get("revestimento", "vinil")) }}',
+                    domotica: '{{ "true" if budget.pool_info.get("answers", {}).get("domotica", budget.pool_info.get("domotica", False)) else "false" }}',
+                    localizacao: '{{ budget.pool_info.get("answers", {}).get("localizacao", budget.pool_info.get("localizacao", "exterior")) }}',
+                    luz: '{{ budget.pool_info.get("answers", {}).get("luz", budget.pool_info.get("luz", "led")) }}',
+                    tratamento_agua: '{{ budget.pool_info.get("answers", {}).get("tratamento_agua", budget.pool_info.get("tratamento_agua", "cloro_manual")) }}',
+                    tipo_construcao: '{{ budget.pool_info.get("answers", {}).get("tipo_construcao", budget.pool_info.get("tipo_construcao", "nova")) }}',
+                    cobertura: '{{ budget.pool_info.get("answers", {}).get("cobertura", budget.pool_info.get("cobertura", "nao")) }}',
+                    casa_maquinas_abaixo: '{{ budget.pool_info.get("answers", {}).get("casa_maquinas_abaixo", budget.pool_info.get("casa_maquinas_abaixo", "nao")) }}',
+                    casa_maquinas_desc: '{{ budget.pool_info.get("answers", {}).get("casa_maquinas_desc", budget.pool_info.get("casa_maquinas_desc", "")) }}',
+                    tipo_luzes: '{{ budget.pool_info.get("answers", {}).get("tipo_luzes", budget.pool_info.get("tipo_luzes", "branco_frio")) }}',
+                    havera_laje: '{{ budget.pool_info.get("answers", {}).get("havera_laje", budget.pool_info.get("havera_laje", "nao")) }}',
+                    laje_m2: '{{ budget.pool_info.get("answers", {}).get("laje_m2", budget.pool_info.get("laje_m2", "")) }}',
+                    laje_espessura: '{{ budget.pool_info.get("answers", {}).get("laje_espessura", budget.pool_info.get("laje_espessura", "")) }}',
+                    revestimento_laje: '{{ budget.pool_info.get("answers", {}).get("revestimento_laje", budget.pool_info.get("revestimento_laje", "nao")) }}',
+                    material_revestimento: '{{ budget.pool_info.get("answers", {}).get("material_revestimento", budget.pool_info.get("material_revestimento", "")) }}'
                 };
                 showConfigurationModal(comprimento, largura, profMin, profMax, currentAnswers);
             });
@@ -7730,6 +7743,88 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Seção 8: Construção da Laje -->
+                        <div class="config-section premium-section">
+                            <div class="section-title">
+                                <i class="fas fa-layer-group section-icon"></i>
+                                <h4>Construção da Laje</h4>
+                            </div>
+                            <div class="premium-grid">
+                                <div class="form-group premium-field">
+                                    <label>Haverá construção de laje?</label>
+                                    <div class="radio-group-premium">
+                                        <div class="radio-option-premium ${currentAnswers.havera_laje === 'sim' ? 'selected' : ''}" data-value="sim">
+                                            <i class="fas fa-check-circle" style="color: var(--success);"></i>
+                                            <span>Sim</span>
+                                        </div>
+                                        <div class="radio-option-premium ${currentAnswers.havera_laje === 'nao' ? 'selected' : ''}" data-value="nao">
+                                            <i class="fas fa-times-circle" style="color: var(--text-muted);"></i>
+                                            <span>Não</span>
+                                        </div>
+                                    </div>
+                                    <input type="hidden" id="edit-havera-laje" value="${currentAnswers.havera_laje || 'nao'}" />
+                                    
+                                    <!-- Campos condicionais para laje -->
+                                    <div id="edit-laje-campos" style="display: ${currentAnswers.havera_laje === 'sim' ? 'block' : 'none'}; margin-top: 15px;">
+                                        <div class="premium-grid" style="grid-template-columns: 1fr 1fr;">
+                                            <div class="form-group premium-field">
+                                                <label>Área da Laje</label>
+                                                <div class="input-wrapper">
+                                                    <input type="number" id="edit-laje-m2" value="${currentAnswers.laje_m2 || ''}" step="0.01" min="0" />
+                                                    <span class="input-unit">m²</span>
+                                                </div>
+                                            </div>
+                                            <div class="form-group premium-field">
+                                                <label>Espessura da Laje</label>
+                                                <select id="edit-laje-espessura" style="width:100%;padding:10px;border:2px solid #e5e7eb;border-radius:8px;">
+                                                    <option value="">Selecione a espessura</option>
+                                                    <option value="0.10" ${currentAnswers.laje_espessura == '0.10' ? 'selected' : ''}>10 cm</option>
+                                                    <option value="0.15" ${currentAnswers.laje_espessura == '0.15' ? 'selected' : ''}>15 cm</option>
+                                                    <option value="0.20" ${currentAnswers.laje_espessura == '0.20' ? 'selected' : ''}>20 cm</option>
+                                                    <option value="0.25" ${currentAnswers.laje_espessura == '0.25' ? 'selected' : ''}>25 cm</option>
+                                                    <option value="0.30" ${currentAnswers.laje_espessura == '0.30' ? 'selected' : ''}>30 cm</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="form-group premium-field" style="margin-top: 15px;">
+                                            <label>Haverá revestimento da laje?</label>
+                                            <div class="radio-group-premium">
+                                                <div class="radio-option-premium ${currentAnswers.revestimento_laje === 'sim' ? 'selected' : ''}" data-value="sim">
+                                                    <i class="fas fa-check-circle" style="color: var(--success);"></i>
+                                                    <span>Sim</span>
+                                                </div>
+                                                <div class="radio-option-premium ${currentAnswers.revestimento_laje === 'nao' ? 'selected' : ''}" data-value="nao">
+                                                    <i class="fas fa-times-circle" style="color: var(--text-muted);"></i>
+                                                    <span>Não</span>
+                                                </div>
+                                            </div>
+                                            <input type="hidden" id="edit-revestimento-laje" value="${currentAnswers.revestimento_laje || 'nao'}" />
+                                            
+                                            <!-- Campo para material de revestimento -->
+                                            <div id="edit-material-revestimento-container" style="display: ${currentAnswers.revestimento_laje === 'sim' ? 'block' : 'none'}; margin-top: 12px;">
+                                                <label>Material do Revestimento</label>
+                                                <select id="edit-material-revestimento" style="width:100%;padding:10px;border:2px solid #e5e7eb;border-radius:8px;">
+                                                    <option value="">Selecione o material</option>
+                                                    <optgroup label="Pedras Naturais">
+                                                        <option value="granito_vila_real" ${currentAnswers.material_revestimento === 'granito_vila_real' ? 'selected' : ''}>Granito Vila Real (€35/m²)</option>
+                                                        <option value="granito_pedras_salgadas" ${currentAnswers.material_revestimento === 'granito_pedras_salgadas' ? 'selected' : ''}>Granito Pedras Salgadas (€35/m²)</option>
+                                                        <option value="granito_preto_angola" ${currentAnswers.material_revestimento === 'granito_preto_angola' ? 'selected' : ''}>Granito Preto Angola (€90/m²)</option>
+                                                        <option value="granito_preto_zimbabue" ${currentAnswers.material_revestimento === 'granito_preto_zimbabue' ? 'selected' : ''}>Granito Preto Zimbabue (€140/m²)</option>
+                                                        <option value="marmore_branco_ibiza" ${currentAnswers.material_revestimento === 'marmore_branco_ibiza' ? 'selected' : ''}>Mármore Branco Ibiza (€90/m²)</option>
+                                                        <option value="travertino_turco" ${currentAnswers.material_revestimento === 'travertino_turco' ? 'selected' : ''}>Travertino Turco (€90/m²)</option>
+                                                    </optgroup>
+                                                    <optgroup label="Cerâmicos">
+                                                        <option value="pedra_hijau" ${currentAnswers.material_revestimento === 'pedra_hijau' ? 'selected' : ''}>Pedra Hijau (€40/m²)</option>
+                                                    </optgroup>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div class="edit-modal-footer premium-footer">
                         <button onclick="closeModal()" class="btn btn-secondary premium-btn">
@@ -7814,6 +7909,56 @@
                                 }
                             }
                         }
+                        
+                        // Handle laje sub-options visibility
+                        if (hiddenInput.id === 'edit-havera-laje') {
+                            const lajeCampos = document.getElementById('edit-laje-campos');
+                            if (lajeCampos) {
+                                if (this.dataset.value === 'sim') {
+                                    lajeCampos.style.display = 'block';
+                                } else {
+                                    lajeCampos.style.display = 'none';
+                                    // Clear laje inputs
+                                    const m2Input = document.getElementById('edit-laje-m2');
+                                    const espessuraInput = document.getElementById('edit-laje-espessura');
+                                    const revestimentoInput = document.getElementById('edit-revestimento-laje');
+                                    const materialContainer = document.getElementById('edit-material-revestimento-container');
+                                    const materialInput = document.getElementById('edit-material-revestimento');
+                                    
+                                    if (m2Input) m2Input.value = '';
+                                    if (espessuraInput) espessuraInput.value = '';
+                                    if (revestimentoInput) revestimentoInput.value = 'nao';
+                                    if (materialContainer) materialContainer.style.display = 'none';
+                                    if (materialInput) materialInput.value = '';
+                                    
+                                    // Clear revestimento laje radio selection
+                                    const revestimentoRadios = document.querySelectorAll('[data-value="nao"]');
+                                    revestimentoRadios.forEach(radio => {
+                                        if (radio.closest('.form-group').querySelector('#edit-revestimento-laje')) {
+                                            radio.classList.add('selected');
+                                            radio.parentNode.querySelectorAll('.radio-option-premium').forEach(opt => {
+                                                if (opt !== radio) opt.classList.remove('selected');
+                                            });
+                                        }
+                                    });
+                                }
+                            }
+                        }
+                        
+                        // Handle revestimento laje sub-options visibility
+                        if (hiddenInput.id === 'edit-revestimento-laje') {
+                            const materialContainer = document.getElementById('edit-material-revestimento-container');
+                            if (materialContainer) {
+                                if (this.dataset.value === 'sim') {
+                                    materialContainer.style.display = 'block';
+                                } else {
+                                    materialContainer.style.display = 'none';
+                                    // Clear material selection
+                                    const materialInput = document.getElementById('edit-material-revestimento');
+                                    if (materialInput) materialInput.value = '';
+                                }
+                            }
+                        }
                     }
                 });
             });
@@ -7854,7 +7999,16 @@
             newAnswers.casa_maquinas_desc = document.getElementById('edit-casa_maquinas_desc') ? document.getElementById('edit-casa_maquinas_desc').value : '';
             newAnswers.tipo_luzes = document.getElementById('edit-tipo_luzes') ? document.getElementById('edit-tipo_luzes').value : 'branco_frio';
 
-            // (No extra fields)
+            // Incluir campos da laje
+            newAnswers.havera_laje = document.getElementById('edit-havera-laje') ? document.getElementById('edit-havera-laje').value : 'nao';
+            if (newAnswers.havera_laje === 'sim') {
+                newAnswers.laje_m2 = document.getElementById('edit-laje-m2') ? parseFloat(document.getElementById('edit-laje-m2').value) || 0 : 0;
+                newAnswers.laje_espessura = document.getElementById('edit-laje-espessura') ? parseFloat(document.getElementById('edit-laje-espessura').value) || 0 : 0;
+                newAnswers.revestimento_laje = document.getElementById('edit-revestimento-laje') ? document.getElementById('edit-revestimento-laje').value : 'nao';
+                if (newAnswers.revestimento_laje === 'sim') {
+                    newAnswers.material_revestimento = document.getElementById('edit-material-revestimento') ? document.getElementById('edit-material-revestimento').value : '';
+                }
+            }
             
             // Mostrar loading
             const saveBtn = document.querySelector('.btn.btn-primary.premium-btn.primary');

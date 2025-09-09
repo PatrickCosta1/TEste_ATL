@@ -27,7 +27,8 @@ def family_display_name(family_name):
         'tratamento_agua': 'Tratamento de Água',
         'revestimento': 'Revestimento',
         'aquecimento': 'Aquecimento',
-        'construcao': 'Construção da Piscina'
+        'construcao': 'Construção da Piscina',
+        'construcao_laje': 'Construção da Laje'
     }
     return family_display_names.get(family_name, family_name.title())
 
@@ -292,7 +293,13 @@ def generate_budget():
             'zona_praia_largura': float(data.get('zona_praia_largura', 0)) if data.get('zona_praia_largura') else 0,
             'zona_praia_comprimento': float(data.get('largura', 0)) if data.get('zona_praia') == 'sim' else 0,  # Comprimento = largura da piscina
             'escadas': data.get('escadas'),
-            'escadas_largura': float(data.get('escadas_largura', 0)) if data.get('escadas_largura') else 0
+            'escadas_largura': float(data.get('escadas_largura', 0)) if data.get('escadas_largura') else 0,
+            # CONSTRUÇÃO DA LAJE
+            'havera_laje': data.get('havera_laje'),
+            'laje_m2': float(data.get('laje_m2', 0)) if data.get('laje_m2') else 0,
+            'laje_espessura': float(data.get('laje_espessura', 0)) if data.get('laje_espessura') else 0,
+            'revestimento_laje': data.get('revestimento_laje'),
+            'material_revestimento': data.get('material_revestimento')
         }
         
         print(f"DEBUG: Answers processadas: {answers}")
@@ -935,7 +942,13 @@ def get_current_answers():
                 'zona_praia_largura': pool_info.get('zona_praia_largura', 0),
                 'zona_praia_comprimento': pool_info.get('zona_praia_comprimento', 0),
                 'escadas': pool_info.get('escadas', 'nao'),
-                'escadas_largura': pool_info.get('escadas_largura', 0)
+                'escadas_largura': pool_info.get('escadas_largura', 0),
+                # Laje
+                'havera_laje': pool_info.get('havera_laje', 'nao'),
+                'laje_m2': pool_info.get('laje_m2', 0),
+                'laje_espessura': pool_info.get('laje_espessura', 0),
+                'revestimento_laje': pool_info.get('revestimento_laje', 'nao'),
+                'material_revestimento': pool_info.get('material_revestimento', '')
             }
         
         return jsonify({
@@ -1050,13 +1063,14 @@ def update_project_configuration():
             'localizacao', 'luz', 'tratamento_agua', 'tipo_construcao', 'cobertura', 
             'tipo_cobertura_laminas', 'casa_maquinas_abaixo', 'casa_maquinas_desc', 
             'tipo_luzes', 'zona_praia', 'zona_praia_largura', 'zona_praia_comprimento',
-            'escadas', 'escadas_largura'
+            'escadas', 'escadas_largura', 'havera_laje', 'laje_m2', 'laje_espessura',
+            'revestimento_laje', 'material_revestimento'
         ]
         
         for f in fields:
             if f in data:
                 # Converter valores numéricos quando necessário
-                if f in ['zona_praia_largura', 'zona_praia_comprimento', 'escadas_largura']:
+                if f in ['zona_praia_largura', 'zona_praia_comprimento', 'escadas_largura', 'laje_m2', 'laje_espessura']:
                     try:
                         answers[f] = float(data.get(f, 0)) if data.get(f) else 0
                     except (ValueError, TypeError):
