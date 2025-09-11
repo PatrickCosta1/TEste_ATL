@@ -1592,7 +1592,7 @@
             </div>
 
             <!-- Produtos por Família - DESIGN COMPACTO -->
-            {% set family_order = ['filtracao', 'recirculacao_iluminacao', 'tratamento_agua', 'revestimento', 'aquecimento', 'construcao', 'construcao_laje'] %}
+            {% set family_order = ['filtracao', 'recirculacao_iluminacao', 'tratamento_agua', 'revestimento', 'aquecimento', 'construcao', 'construcao_laje', 'bordadura'] %}
             {% for family_name in family_order %}
             {% if family_name in budget.get('families', {}) %}
             {% set family_products = budget.get('families', {})[family_name] %}
@@ -1620,6 +1620,7 @@
                             {% elif family_name == 'recirculacao_iluminacao' %}fa-water
                             {% elif family_name == 'construcao' %}fa-hammer
                             {% elif family_name == 'construcao_laje' %}fa-layer-group
+                            {% elif family_name == 'bordadura' %}fa-border-top-left
                             {% else %}fa-cog{% endif %}"></i>
                         {{ family_name|family_display_name }}
                     </div>
@@ -6453,7 +6454,10 @@
                 'Iluminação': 'fa-lightbulb',
                 'Automação': 'fa-robot',
                 'Limpeza': 'fa-broom',
-                'Acessórios': 'fa-wrench'
+                'Acessórios': 'fa-wrench',
+                'Construção da Piscina': 'fa-hammer',
+                'Construção da Laje': 'fa-layer-group',
+                'Bordadura': 'fa-border-top-left'
             };
 
             // Debug: mostrar families recebidas (ajuda a entender por que só aparece uma)
@@ -7297,7 +7301,12 @@
                     laje_m2: '{{ budget.pool_info.get("answers", {}).get("laje_m2", budget.pool_info.get("laje_m2", "")) }}',
                     laje_espessura: '{{ budget.pool_info.get("answers", {}).get("laje_espessura", budget.pool_info.get("laje_espessura", "")) }}',
                     revestimento_laje: '{{ budget.pool_info.get("answers", {}).get("revestimento_laje", budget.pool_info.get("revestimento_laje", "nao")) }}',
-                    material_revestimento: '{{ budget.pool_info.get("answers", {}).get("material_revestimento", budget.pool_info.get("material_revestimento", "")) }}'
+                    material_revestimento: '{{ budget.pool_info.get("answers", {}).get("material_revestimento", budget.pool_info.get("material_revestimento", "")) }}',
+                    havera_bordadura: '{{ budget.pool_info.get("answers", {}).get("havera_bordadura", budget.pool_info.get("havera_bordadura", "nao")) }}',
+                    tipo_bordadura: '{{ budget.pool_info.get("answers", {}).get("tipo_bordadura", budget.pool_info.get("tipo_bordadura", "")) }}',
+                    espessura_bordadura: '{{ budget.pool_info.get("answers", {}).get("espessura_bordadura", budget.pool_info.get("espessura_bordadura", "")) }}',
+                    material_bordadura_natural: '{{ budget.pool_info.get("answers", {}).get("material_bordadura_natural", budget.pool_info.get("material_bordadura_natural", "")) }}',
+                    serie_bordadura_ceramico: '{{ budget.pool_info.get("answers", {}).get("serie_bordadura_ceramico", budget.pool_info.get("serie_bordadura_ceramico", "")) }}'
                 };
                 showConfigurationModal(comprimento, largura, profMin, profMax, currentAnswers);
             });
@@ -7305,6 +7314,29 @@
         
         // Função para mostrar o modal com os dados
         function showConfigurationModal(comprimento, largura, profMin, profMax, currentAnswers) {
+            // Processar dados de bordadura para separar material e espessura
+            let processedAnswers = {...currentAnswers};
+            
+            if (processedAnswers.material_bordadura_natural) {
+                // Se material_bordadura_natural contém espessura (ex: "granito_vila_real_2cm")
+                const materialCompleto = processedAnswers.material_bordadura_natural;
+                
+                // Extrair material base e espessura
+                if (materialCompleto.endsWith('_1cm')) {
+                    processedAnswers.material_bordadura_natural_base = materialCompleto.replace('_1cm', '');
+                    processedAnswers.espessura_bordadura = '1cm';
+                } else if (materialCompleto.endsWith('_2cm')) {
+                    processedAnswers.material_bordadura_natural_base = materialCompleto.replace('_2cm', '');
+                    processedAnswers.espessura_bordadura = '2cm';
+                } else if (materialCompleto.endsWith('_3cm')) {
+                    processedAnswers.material_bordadura_natural_base = materialCompleto.replace('_3cm', '');
+                    processedAnswers.espessura_bordadura = '3cm';
+                } else {
+                    // Se não tem espessura no nome, usar o valor original
+                    processedAnswers.material_bordadura_natural_base = materialCompleto;
+                }
+            }
+            
             const modal = document.createElement('div');
             modal.className = 'edit-modal-overlay large-modal';
             modal.innerHTML = `
@@ -7821,6 +7853,87 @@
                                                 </select>
                                             </div>
                                         </div>
+                                        
+                                        <!-- Seção de Bordadura -->
+                                        <div class="form-group premium-field" style="margin-top: 25px; border-top: 2px solid #e5e7eb; padding-top: 20px;">
+                                            <label style="font-weight: 600; color: var(--text-primary); font-size: 16px;">
+                                                <i class="fas fa-border-top-left" style="color: var(--primary); margin-right: 8px;"></i>
+                                                Bordadura da Piscina
+                                            </label>
+                                            <div class="radio-group-premium" style="margin-top: 12px;">
+                                                <div class="radio-option-premium ${processedAnswers.havera_bordadura === 'sim' ? 'selected' : ''}" data-value="sim">
+                                                    <i class="fas fa-check-circle" style="color: var(--success);"></i>
+                                                    <span>Sim</span>
+                                                </div>
+                                                <div class="radio-option-premium ${processedAnswers.havera_bordadura === 'nao' ? 'selected' : ''}" data-value="nao">
+                                                    <i class="fas fa-times-circle" style="color: var(--text-muted);"></i>
+                                                    <span>Não</span>
+                                                </div>
+                                            </div>
+                                            <input type="hidden" id="edit-havera-bordadura" value="${processedAnswers.havera_bordadura || 'nao'}" />
+                                            
+                                            <!-- Campos condicionais de bordadura -->
+                                            <div id="edit-bordadura-options" style="display: ${processedAnswers.havera_bordadura === 'sim' ? 'block' : 'none'}; margin-top: 15px;">
+                                                
+                                                <!-- Tipo de bordadura -->
+                                                <div class="form-group premium-field" style="margin-bottom: 15px;">
+                                                    <label>Tipo de Material</label>
+                                                    <div class="radio-group-premium">
+                                                        <div class="radio-option-premium ${processedAnswers.tipo_bordadura === 'pedra_natural' ? 'selected' : ''}" data-value="pedra_natural">
+                                                            <i class="fas fa-mountain" style="color: var(--accent);"></i>
+                                                            <span>Pedra Natural</span>
+                                                        </div>
+                                                        <div class="radio-option-premium ${processedAnswers.tipo_bordadura === 'ceramico' ? 'selected' : ''}" data-value="ceramico">
+                                                            <i class="fas fa-layer-group" style="color: var(--secondary);"></i>
+                                                            <span>Cerâmico</span>
+                                                        </div>
+                                                    </div>
+                                                    <input type="hidden" id="edit-tipo-bordadura" value="${processedAnswers.tipo_bordadura || ''}" />
+                                                </div>
+                                                
+                                                <!-- Opções para pedra natural -->
+                                                <div id="edit-pedra-natural-options" style="display: ${processedAnswers.tipo_bordadura === 'pedra_natural' ? 'block' : 'none'};">
+                                                    <div class="form-group premium-field" style="margin-bottom: 12px;">
+                                                        <label>Espessura</label>
+                                                        <select id="edit-espessura-bordadura" style="width:100%;padding:10px;border:2px solid #e5e7eb;border-radius:8px;">
+                                                            <option value="">Selecione a espessura</option>
+                                                            <option value="2cm" ${processedAnswers.espessura_bordadura === '2cm' ? 'selected' : ''}>2 cm</option>
+                                                            <option value="3cm" ${processedAnswers.espessura_bordadura === '3cm' ? 'selected' : ''}>3 cm</option>
+                                                            <option value="outro" ${processedAnswers.espessura_bordadura === 'outro' ? 'selected' : ''}>Outro</option>
+                                                        </select>
+                                                    </div>
+                                                    
+                                                    <div class="form-group premium-field">
+                                                        <label>Material da Pedra Natural</label>
+                                                        <select id="edit-material-bordadura-natural" style="width:100%;padding:10px;border:2px solid #e5e7eb;border-radius:8px;">
+                                                            <option value="">Selecione o material</option>
+                                                            <option value="granito_vila_real" ${processedAnswers.material_bordadura_natural_base === 'granito_vila_real' ? 'selected' : ''}>Granito Vila Real</option>
+                                                            <option value="granito_pedras_salgadas" ${processedAnswers.material_bordadura_natural_base === 'granito_pedras_salgadas' ? 'selected' : ''}>Granito Pedras Salgadas</option>
+                                                            <option value="granito_preto_angola" ${processedAnswers.material_bordadura_natural_base === 'granito_preto_angola' ? 'selected' : ''}>Granito Preto Angola</option>
+                                                            <option value="granito_preto_zimbabue" ${processedAnswers.material_bordadura_natural_base === 'granito_preto_zimbabue' ? 'selected' : ''}>Granito Preto Zimbabue</option>
+                                                            <option value="marmore_branco_ibiza" ${processedAnswers.material_bordadura_natural_base === 'marmore_branco_ibiza' ? 'selected' : ''}>Mármore Branco Ibiza</option>
+                                                            <option value="travertino_turco" ${processedAnswers.material_bordadura_natural_base === 'travertino_turco' ? 'selected' : ''}>Travertino Turco</option>
+                                                            <option value="pedra_hijau" ${processedAnswers.material_bordadura_natural_base === 'pedra_hijau' ? 'selected' : ''}>Pedra Hijau</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                
+                                                <!-- Opções para cerâmico -->
+                                                <div id="edit-ceramico-options" style="display: ${processedAnswers.tipo_bordadura === 'ceramico' ? 'block' : 'none'};">
+                                                    <div class="form-group premium-field">
+                                                        <label>Série Cerâmica</label>
+                                                        <select id="edit-serie-bordadura-ceramico" style="width:100%;padding:10px;border:2px solid #e5e7eb;border-radius:8px;">
+                                                            <option value="">Selecione a série</option>
+                                                            <option value="niza" ${processedAnswers.serie_bordadura_ceramico === 'niza' ? 'selected' : ''}>Niza</option>
+                                                            <option value="oslo" ${processedAnswers.serie_bordadura_ceramico === 'oslo' ? 'selected' : ''}>Oslo</option>
+                                                            <option value="paradise_bali" ${processedAnswers.serie_bordadura_ceramico === 'paradise_bali' ? 'selected' : ''}>Paradise Bali</option>
+                                                            <option value="tivoli" ${processedAnswers.serie_bordadura_ceramico === 'tivoli' ? 'selected' : ''}>Tívoli</option>
+                                                            <option value="amberes" ${processedAnswers.serie_bordadura_ceramico === 'amberes' ? 'selected' : ''}>Amberes</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -7959,6 +8072,61 @@
                                 }
                             }
                         }
+                        
+                        // Handle bordadura sub-options visibility
+                        if (hiddenInput.id === 'edit-havera-bordadura') {
+                            const bordaduraOptions = document.getElementById('edit-bordadura-options');
+                            if (bordaduraOptions) {
+                                if (this.dataset.value === 'sim') {
+                                    bordaduraOptions.style.display = 'block';
+                                } else {
+                                    bordaduraOptions.style.display = 'none';
+                                    // Clear bordadura inputs
+                                    const tipoInput = document.getElementById('edit-tipo-bordadura');
+                                    const espessuraInput = document.getElementById('edit-espessura-bordadura');
+                                    const materialNaturalInput = document.getElementById('edit-material-bordadura-natural');
+                                    const serieceramicoInput = document.getElementById('edit-serie-bordadura-ceramico');
+                                    const pedraNaturalOptions = document.getElementById('edit-pedra-natural-options');
+                                    const ceramicoOptions = document.getElementById('edit-ceramico-options');
+                                    
+                                    if (tipoInput) tipoInput.value = '';
+                                    if (espessuraInput) espessuraInput.value = '';
+                                    if (materialNaturalInput) materialNaturalInput.value = '';
+                                    if (serieceramicoInput) serieceramicoInput.value = '';
+                                    if (pedraNaturalOptions) pedraNaturalOptions.style.display = 'none';
+                                    if (ceramicoOptions) ceramicoOptions.style.display = 'none';
+                                    
+                                    // Clear tipo bordadura radio selection
+                                    const tipoRadios = bordaduraOptions.querySelectorAll('.radio-option-premium');
+                                    tipoRadios.forEach(radio => radio.classList.remove('selected'));
+                                }
+                            }
+                        }
+                        
+                        // Handle tipo bordadura sub-options visibility
+                        if (hiddenInput.id === 'edit-tipo-bordadura') {
+                            const pedraNaturalOptions = document.getElementById('edit-pedra-natural-options');
+                            const ceramicoOptions = document.getElementById('edit-ceramico-options');
+                            
+                            if (this.dataset.value === 'pedra_natural') {
+                                if (pedraNaturalOptions) pedraNaturalOptions.style.display = 'block';
+                                if (ceramicoOptions) ceramicoOptions.style.display = 'none';
+                                // Clear ceramico inputs
+                                const serieInput = document.getElementById('edit-serie-bordadura-ceramico');
+                                if (serieInput) serieInput.value = '';
+                            } else if (this.dataset.value === 'ceramico') {
+                                if (ceramicoOptions) ceramicoOptions.style.display = 'block';
+                                if (pedraNaturalOptions) pedraNaturalOptions.style.display = 'none';
+                                // Clear pedra natural inputs
+                                const espessuraInput = document.getElementById('edit-espessura-bordadura');
+                                const materialInput = document.getElementById('edit-material-bordadura-natural');
+                                if (espessuraInput) espessuraInput.value = '';
+                                if (materialInput) materialInput.value = '';
+                            } else {
+                                if (pedraNaturalOptions) pedraNaturalOptions.style.display = 'none';
+                                if (ceramicoOptions) ceramicoOptions.style.display = 'none';
+                            }
+                        }
                     }
                 });
             });
@@ -8007,6 +8175,30 @@
                 newAnswers.revestimento_laje = document.getElementById('edit-revestimento-laje') ? document.getElementById('edit-revestimento-laje').value : 'nao';
                 if (newAnswers.revestimento_laje === 'sim') {
                     newAnswers.material_revestimento = document.getElementById('edit-material-revestimento') ? document.getElementById('edit-material-revestimento').value : '';
+                }
+            }
+            
+            // Incluir campos da bordadura
+            newAnswers.havera_bordadura = document.getElementById('edit-havera-bordadura') ? document.getElementById('edit-havera-bordadura').value : 'nao';
+            if (newAnswers.havera_bordadura === 'sim') {
+                newAnswers.tipo_bordadura = document.getElementById('edit-tipo-bordadura') ? document.getElementById('edit-tipo-bordadura').value : '';
+                if (newAnswers.tipo_bordadura === 'pedra_natural') {
+                    const espessura = document.getElementById('edit-espessura-bordadura') ? document.getElementById('edit-espessura-bordadura').value : '';
+                    const material = document.getElementById('edit-material-bordadura-natural') ? document.getElementById('edit-material-bordadura-natural').value : '';
+                    
+                    // Combinar material e espessura para formar a chave correta
+                    if (espessura && material) {
+                        if (material === 'pedra_hijau') {
+                            // Pedra Hijau sempre usa 1cm
+                            newAnswers.material_bordadura_natural = 'pedra_hijau_1cm';
+                        } else {
+                            // Outros materiais usam a espessura selecionada
+                            newAnswers.material_bordadura_natural = `${material}_${espessura}`;
+                        }
+                    }
+                    newAnswers.espessura_bordadura = espessura;
+                } else if (newAnswers.tipo_bordadura === 'ceramico') {
+                    newAnswers.serie_bordadura_ceramico = document.getElementById('edit-serie-bordadura-ceramico') ? document.getElementById('edit-serie-bordadura-ceramico').value : '';
                 }
             }
             

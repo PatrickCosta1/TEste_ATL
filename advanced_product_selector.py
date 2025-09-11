@@ -430,6 +430,9 @@ class AdvancedProductSelector:
         # Selecionar produtos de construção da laje
         construcao_laje = self._select_laje_products(answers, dimensions)
 
+        # Selecionar produtos de bordadura
+        bordadura = self._select_bordadura_products(answers, dimensions)
+
         # ORDEM FILTRACAO
         filtracao_order = ['filter', 'valve', 'pump', 'vidro', 'quadro']
         def filtracao_sort_key(k):
@@ -520,11 +523,12 @@ class AdvancedProductSelector:
             'revestimento': 'Revestimento',
             'aquecimento': 'Aquecimento',
             'construcao': 'Construção da Piscina',
-            'construcao_laje': 'Construção da Laje'
+            'construcao_laje': 'Construção da Laje',
+            'bordadura': 'Bordadura'
         }
 
         # Para cada família interna, aplicar swap se necessário e manter a chave interna
-        for fam_name, fam_dict in [('filtracao', filtracao_sorted), ('recirculacao_iluminacao', recirculacao_sorted), ('tratamento_agua', tratamento_agua), ('revestimento', revestimento), ('aquecimento', aquecimento), ('construcao', construcao), ('construcao_laje', construcao_laje)]:
+        for fam_name, fam_dict in [('filtracao', filtracao_sorted), ('recirculacao_iluminacao', recirculacao_sorted), ('tratamento_agua', tratamento_agua), ('revestimento', revestimento), ('aquecimento', aquecimento), ('construcao', construcao), ('construcao_laje', construcao_laje), ('bordadura', bordadura)]:
             if fam_dict:
                 selected_key = None
                 previous_key = None
@@ -2016,35 +2020,71 @@ class AdvancedProductSelector:
         
         # Definir preços dos materiais de revestimento
         precos_revestimento = {
+            # Pedras Naturais
             'granito_vila_real': 35.0,
             'granito_pedras_salgadas': 35.0,
             'granito_preto_angola': 90.0,
             'granito_preto_zimbabue': 140.0,
             'marmore_branco_ibiza': 90.0,
             'travertino_turco': 90.0,
-            'pedra_hijau': 40.0  # cerâmico
+            'pedra_hijau': 40.0,  # Movido para natural
+            # Cerâmicos
+            'base_niza_625': 34.60,
+            'base_niza_1200': 40.52,
+            'base_oslo_625': 34.60,
+            'base_oslo_1200': 40.52,
+            'base_paradise_bali_625': 34.60,
+            'base_oceanic_625': 34.60,
+            'base_tivoli_625': 34.60,
+            'base_tivoli_1200': 40.52,
+            'base_amberes_625': 34.60,
+            'base_amberes_1200': 40.52
         }
         
         # Nomes dos materiais
         nomes_materiais = {
+            # Pedras Naturais
             'granito_vila_real': 'Granito Vila Real',
             'granito_pedras_salgadas': 'Granito Pedras Salgadas',
             'granito_preto_angola': 'Granito Preto Angola',
             'granito_preto_zimbabue': 'Granito Preto Zimbabue',
             'marmore_branco_ibiza': 'Mármore Branco Ibiza',
             'travertino_turco': 'Travertino Turco',
-            'pedra_hijau': 'Pedra Hijau'
+            'pedra_hijau': 'Pedra Hijau',
+            # Cerâmicos
+            'base_niza_625': 'Base Niza 625x310x10',
+            'base_niza_1200': 'Base Niza 1200x600x10',
+            'base_oslo_625': 'Base Oslo 625x310x10',
+            'base_oslo_1200': 'Base Oslo 1200x600x10',
+            'base_paradise_bali_625': 'Base Paradise Bali 625x310x10',
+            'base_oceanic_625': 'Base Oceanic 625x310x10',
+            'base_tivoli_625': 'Base Tívoli 625x310x10',
+            'base_tivoli_1200': 'Base Tívoli 1200x600x10',
+            'base_amberes_625': 'Base Amberes 625x310x10',
+            'base_amberes_1200': 'Base Amberes 1200x600x10'
         }
         
         # Tipos de material (para diferenciação futura)
         tipos_materiais = {
+            # Pedras Naturais
             'granito_vila_real': 'natural',
             'granito_pedras_salgadas': 'natural',
             'granito_preto_angola': 'natural',
             'granito_preto_zimbabue': 'natural',
             'marmore_branco_ibiza': 'natural',
             'travertino_turco': 'natural',
-            'pedra_hijau': 'ceramico'
+            'pedra_hijau': 'natural',  # Alterado para natural
+            # Cerâmicos
+            'base_niza_625': 'ceramico',
+            'base_niza_1200': 'ceramico',
+            'base_oslo_625': 'ceramico',
+            'base_oslo_1200': 'ceramico',
+            'base_paradise_bali_625': 'ceramico',
+            'base_oceanic_625': 'ceramico',
+            'base_tivoli_625': 'ceramico',
+            'base_tivoli_1200': 'ceramico',
+            'base_amberes_625': 'ceramico',
+            'base_amberes_1200': 'ceramico'
         }
         
         # Item 1: Pavimento térreo
@@ -2096,3 +2136,157 @@ class AdvancedProductSelector:
                 }
         
         return construcao_laje
+
+    def _select_bordadura_products(self, answers: Dict, dimensions: Dict) -> Dict:
+        """Seleciona produtos de bordadura baseado nas respostas do questionário"""
+        import math
+        
+        bordadura = {}
+        
+        # Verificar se haverá bordadura
+        havera_bordadura = answers.get('havera_bordadura', 'nao')
+        if havera_bordadura != 'sim':
+            return bordadura
+        
+        # Obter dados básicos
+        try:
+            comprimento = float(dimensions.get('comprimento', 0))
+            largura = float(dimensions.get('largura', 0))
+            m2_piscina = comprimento * largura
+            perimetro = 2 * (comprimento + largura)
+        except (ValueError, TypeError):
+            return bordadura
+        
+        if comprimento <= 0 or largura <= 0:
+            return bordadura
+        
+        # Obter tipo de bordadura
+        tipo_bordadura = answers.get('tipo_bordadura', '')
+        
+        if tipo_bordadura == 'pedra_natural':
+            # PEDRA NATURAL
+            espessura_bordadura = answers.get('espessura_bordadura', '')
+            material_bordadura = answers.get('material_bordadura_natural', '')
+            
+            if not espessura_bordadura or not material_bordadura:
+                return bordadura
+            
+            # Definir preços das pedras naturais por espessura
+            precos_pedra_natural = {
+                'granito_vila_real_2cm': 58.33,
+                'granito_vila_real_3cm': 75.00,
+                'granito_pedras_salgadas_2cm': 58.33,
+                'granito_pedras_salgadas_3cm': 75.00,
+                'granito_preto_angola_2cm': 150.00,
+                'granito_preto_angola_3cm': 183.33,
+                'granito_preto_zimbabue_2cm': 233.33,
+                'granito_preto_zimbabue_3cm': 300.00,
+                'marmore_branco_ibiza_2cm': 150.00,
+                'marmore_branco_ibiza_3cm': 216.67,
+                'pedra_hijau_1cm': 66.67
+            }
+            
+            # Nomes das pedras
+            nomes_pedra_natural = {
+                'granito_vila_real_2cm': 'Granito Vila Real 2cm',
+                'granito_vila_real_3cm': 'Granito Vila Real 3cm',
+                'granito_pedras_salgadas_2cm': 'Granito Pedras Salgadas 2cm',
+                'granito_pedras_salgadas_3cm': 'Granito Pedras Salgadas 3cm',
+                'granito_preto_angola_2cm': 'Granito Preto Angola 2cm',
+                'granito_preto_angola_3cm': 'Granito Preto Angola 3cm',
+                'granito_preto_zimbabue_2cm': 'Granito Preto Zimbabue 2cm',
+                'granito_preto_zimbabue_3cm': 'Granito Preto Zimbabue 3cm',
+                'marmore_branco_ibiza_2cm': 'Mármore Branco Ibiza 2cm',
+                'marmore_branco_ibiza_3cm': 'Mármore Branco Ibiza 3cm',
+                'pedra_hijau_1cm': 'Pedra Hijau 1cm'
+            }
+            
+            if material_bordadura in precos_pedra_natural:
+                preco_m2 = precos_pedra_natural[material_bordadura]
+                nome_material = nomes_pedra_natural[material_bordadura]
+                
+                # Converter espessura para metros
+                if espessura_bordadura == '2cm':
+                    espessura_m = 0.02
+                elif espessura_bordadura == '3cm':
+                    espessura_m = 0.03
+                elif espessura_bordadura == '1cm':
+                    espessura_m = 0.01
+                else:
+                    espessura_m = float(espessura_bordadura) / 100  # Assumir que está em cm
+                
+                # Cálculo: ((perímetro + 8*espessura) * espessura) + 38*m²_piscina
+                quantidade_m2 = (perimetro + 8 * espessura_m) * espessura_m
+                custo_adicional_m2 = 38 * m2_piscina
+                preco_unitario_total = (quantidade_m2 * preco_m2) + custo_adicional_m2
+                
+                bordadura['bordadura_pedra_natural'] = {
+                    'name': f'Bordadura em {nome_material}',
+                    'price': round(preco_unitario_total, 2),  # Preço unitário (que inclui todo o cálculo)
+                    'quantity': 1,  # Quantidade 1 (serviço completo)
+                    'unit': 'serviço',
+                    'item_type': 'incluido',
+                    'reasoning': f'Bordadura {quantidade_m2:.2f}m² × €{preco_m2}/m² + €{custo_adicional_m2} (€38/m² piscina)',
+                    'can_change_type': True
+                }
+        
+        elif tipo_bordadura == 'ceramico':
+            # CERÂMICO
+            serie_bordadura = answers.get('serie_bordadura_ceramico', '')
+            
+            if not serie_bordadura:
+                return bordadura
+            
+            # Preços fixos para cerâmicos
+            preco_peldano = 37.22  # euros/unidade
+            preco_canto = 87.00    # euros/unidade
+            custo_adicional_m2 = 38 * m2_piscina
+            
+            # Dimensões das peças (todas têm 0.625m de comprimento)
+            comprimento_peca = 0.625
+            
+            # Calcular quantidades
+            qtd_peldano = math.ceil(perimetro / comprimento_peca)  # Perímetro total dividido pelo comprimento da peça
+            qtd_canto = 4  # Sempre 4 por piscina
+            
+            # Nomes das séries
+            nomes_series = {
+                'niza': 'Niza',
+                'oslo': 'Oslo',
+                'paradise_bali': 'Paradise Bali',
+                'tivoli': 'Tívoli',
+                'amberes': 'Amberes'
+            }
+            
+            nome_serie = nomes_series.get(serie_bordadura, serie_bordadura)
+            
+            # Peldaño Recto
+            # O custo adicional (€38/m² piscina) é somado UMA VEZ ao total, não por unidade
+            custo_peldano_unitario = preco_peldano  # €37.22 por unidade
+            custo_adicional_total = custo_adicional_m2  # €38 × m² piscina (valor único)
+            preco_unitario_peldano = custo_peldano_unitario + (custo_adicional_total / qtd_peldano)
+            
+            bordadura[f'peldano_{serie_bordadura}'] = {
+                'name': f'Peldaño Recto {nome_serie} 625x317x40',
+                'price': round(preco_unitario_peldano, 2),  # Preço unitário (inclui rateio do custo adicional)
+                'quantity': qtd_peldano,  # Quantidade real de peças
+                'unit': 'un',
+                'item_type': 'incluido',
+                'reasoning': f'{qtd_peldano} unidades × €{preco_peldano} + €{custo_adicional_total} (€38/m² piscina)',
+                'can_change_type': True
+            }
+            
+            # Canto Interior
+            # Apenas quantidade × preço unitário, sem custo adicional
+            bordadura[f'canto_{serie_bordadura}'] = {
+                'name': f'Canto Interior Peldaño Recto {nome_serie} 625x625x40',
+                'price': round(preco_canto, 2),  # Preço unitário real
+                'quantity': qtd_canto,  # Quantidade real de peças
+                'unit': 'un',
+                'item_type': 'incluido',
+                'reasoning': f'{qtd_canto} unidades × €{preco_canto}',
+                'can_change_type': True
+            }
+               
+        
+        return bordadura

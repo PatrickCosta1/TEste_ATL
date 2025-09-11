@@ -618,10 +618,121 @@
                                             <option value="granito_preto_zimbabue">Granito Preto Zimbabue (€140/m²)</option>
                                             <option value="marmore_branco_ibiza">Mármore Branco Ibiza (€90/m²)</option>
                                             <option value="travertino_turco">Travertino Turco (€90/m²)</option>
-                                        </optgroup>
-                                        <optgroup label="Cerâmicos">
                                             <option value="pedra_hijau">Pedra Hijau (€40/m²)</option>
                                         </optgroup>
+                                        <optgroup label="Cerâmicos">
+                                            <option value="base_niza_625">Base Niza 625x310x10 (€34,60/m²)</option>
+                                            <option value="base_niza_1200">Base Niza 1200x600x10 (€40.52/m²)</option>
+                                            <option value="base_oslo_625">Base Oslo 625x310x10 (€34,60/m²)</option>
+                                            <option value="base_oslo_1200">Base Oslo 1200x600x10 (€40.52/m²)</option>
+                                            <option value="base_paradise_bali_625">Base Paradise Bali 625x310x10 (€34,60/m²)</option>
+                                            <option value="base_oceanic_625">Base Oceanic 625x310x10 (€34,60/m²)</option>
+                                            <option value="base_tivoli_625">Base Tívoli 625x310x10 (€34,60/m²)</option>
+                                            <option value="base_tivoli_1200">Base Tívoli 1200x600x10 (€40.52/m²)</option>
+                                            <option value="base_amberes_625">Base Amberes 625x310x10 (€34,60/m²)</option>
+                                            <option value="base_amberes_1200">Base Amberes 1200x600x10 (€40.52/m²)</option>
+                                        </optgroup>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Seção 8: Bordadura -->
+                    <div class="question-section" data-section="8">
+                        <h3 style="margin-bottom: 2rem; color: var(--primary);">
+                            <i class="fas fa-border-top-left"></i>
+                            Bordadura
+                        </h3>
+
+                        <!-- Pergunta 1: Haverá bordadura? -->
+                        <div class="form-group">
+                            <label class="form-label">Haverá bordadura?</label>
+                            <div class="radio-group">
+                                <div class="radio-option">
+                                    <input type="radio" name="havera_bordadura" id="bordadura_sim" value="sim" onchange="toggleBordaduraFields()">
+                                    <label for="bordadura_sim">
+                                        <i class="fas fa-check-circle" style="color: var(--success);"></i><br>
+                                        Sim
+                                    </label>
+                                </div>
+                                <div class="radio-option">
+                                    <input type="radio" name="havera_bordadura" id="bordadura_nao" value="nao" checked onchange="toggleBordaduraFields()">
+                                    <label for="bordadura_nao">
+                                        <i class="fas fa-times-circle" style="color: var(--text-secondary);"></i><br>
+                                        Não
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Campos condicionais para bordadura -->
+                        <div id="bordaduraFields" style="display: none;">
+                            
+                            <!-- Pergunta 2: Tipo de bordadura -->
+                            <div class="form-group">
+                                <label class="form-label">Tipo de bordadura:</label>
+                                <div class="radio-group">
+                                    <div class="radio-option">
+                                        <input type="radio" name="tipo_bordadura" id="tipo_pedra_natural" value="pedra_natural" onchange="toggleTipoBordadura()">
+                                        <label for="tipo_pedra_natural">
+                                            <i class="fas fa-gem" style="color: var(--primary);"></i><br>
+                                            Pedra Natural
+                                        </label>
+                                    </div>
+                                    <div class="radio-option">
+                                        <input type="radio" name="tipo_bordadura" id="tipo_ceramico" value="ceramico" onchange="toggleTipoBordadura()">
+                                        <label for="tipo_ceramico">
+                                            <i class="fas fa-th-large" style="color: var(--info);"></i><br>
+                                            Cerâmico
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Campos para pedra natural -->
+                            <div id="pedraNaturalFields" style="display: none;">
+                                
+                                <!-- Espessura da bordadura -->
+                                <div class="form-group">
+                                    <label class="form-label">Espessura da bordadura:</label>
+                                    <div class="radio-group">
+                                        <div class="radio-option">
+                                            <input type="radio" name="espessura_bordadura" id="esp_2cm" value="2cm" onchange="atualizarMateriais()">
+                                            <label for="esp_2cm">2cm</label>
+                                        </div>
+                                        <div class="radio-option">
+                                            <input type="radio" name="espessura_bordadura" id="esp_3cm" value="3cm" onchange="atualizarMateriais()">
+                                            <label for="esp_3cm">3cm</label>
+                                        </div>
+                                        <div class="radio-option">
+                                            <input type="radio" name="espessura_bordadura" id="esp_outro" value="outro" onchange="atualizarMateriais()">
+                                            <label for="esp_outro">Outro</label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Material da bordadura (pedra natural) -->
+                                <div class="form-group" id="materialNaturalGroup" style="display: none;">
+                                    <label class="form-label" for="material_bordadura_natural">Material da bordadura:</label>
+                                    <select name="material_bordadura_natural" id="material_bordadura_natural" class="form-input">
+                                        <option value="">Selecione o material...</option>
+                                        <!-- As opções serão preenchidas dinamicamente pelo JavaScript -->
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Campos para cerâmico -->
+                            <div id="ceramicoFields" style="display: none;">
+                                <div class="form-group">
+                                    <label class="form-label" for="serie_bordadura_ceramico">Série cerâmica:</label>
+                                    <select name="serie_bordadura_ceramico" id="serie_bordadura_ceramico" class="form-input">
+                                        <option value="">Selecione a série...</option>
+                                        <option value="niza">Niza</option>
+                                        <option value="oslo">Oslo</option>
+                                        <option value="paradise_bali">Paradise Bali</option>
+                                        <option value="tivoli">Tívoli</option>
+                                        <option value="amberes">Amberes</option>
                                     </select>
                                 </div>
                             </div>
@@ -709,7 +820,7 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             let currentSection = 1;
-            const totalSections = 7;
+            const totalSections = 8;
             const nextBtn = document.getElementById('nextBtn');
             const prevBtn = document.getElementById('prevBtn');
             const submitBtn = document.getElementById('submitBtn');
@@ -1022,6 +1133,98 @@
                 revestimentoCampos.style.display = 'none';
                 materialSelect.required = false;
                 materialSelect.value = '';
+            }
+        }
+
+        // === FUNÇÕES PARA BORDADURA ===
+        
+        // Função para controlar campos da bordadura
+        function toggleBordaduraFields() {
+            const bordaduraCampos = document.getElementById('bordaduraFields');
+            const selectedValue = document.querySelector('input[name="havera_bordadura"]:checked')?.value;
+            
+            if (selectedValue === 'sim') {
+                bordaduraCampos.style.display = 'block';
+            } else {
+                bordaduraCampos.style.display = 'none';
+                // Limpar campos quando não há bordadura
+                document.querySelectorAll('input[name="tipo_bordadura"]').forEach(radio => radio.checked = false);
+                document.querySelectorAll('input[name="espessura_bordadura"]').forEach(radio => radio.checked = false);
+                document.getElementById('material_bordadura_natural').value = '';
+                document.getElementById('serie_bordadura_ceramico').value = '';
+                toggleTipoBordadura();
+            }
+        }
+
+        // Função para controlar tipo de bordadura
+        function toggleTipoBordadura() {
+            const pedraNaturalFields = document.getElementById('pedraNaturalFields');
+            const ceramicoFields = document.getElementById('ceramicoFields');
+            const selectedValue = document.querySelector('input[name="tipo_bordadura"]:checked')?.value;
+            
+            if (selectedValue === 'pedra_natural') {
+                pedraNaturalFields.style.display = 'block';
+                ceramicoFields.style.display = 'none';
+                document.getElementById('serie_bordadura_ceramico').value = '';
+                atualizarMateriais();
+            } else if (selectedValue === 'ceramico') {
+                pedraNaturalFields.style.display = 'none';
+                ceramicoFields.style.display = 'block';
+                document.getElementById('material_bordadura_natural').value = '';
+                document.querySelectorAll('input[name="espessura_bordadura"]').forEach(radio => radio.checked = false);
+                document.getElementById('materialNaturalGroup').style.display = 'none';
+            } else {
+                pedraNaturalFields.style.display = 'none';
+                ceramicoFields.style.display = 'none';
+            }
+        }
+
+        // Função para atualizar lista de materiais baseado na espessura
+        function atualizarMateriais() {
+            const espessuraSelected = document.querySelector('input[name="espessura_bordadura"]:checked')?.value;
+            const materialSelect = document.getElementById('material_bordadura_natural');
+            const materialGroup = document.getElementById('materialNaturalGroup');
+            
+            // Limpar opções existentes
+            materialSelect.innerHTML = '<option value="">Selecione o material...</option>';
+            
+            if (!espessuraSelected) {
+                materialGroup.style.display = 'none';
+                return;
+            }
+            
+            // Definir materiais por espessura
+            const materiais = {
+                '2cm': [
+                    {value: 'granito_vila_real_2cm', text: 'Granito Vila Real 2cm (€58,33/m²)'},
+                    {value: 'granito_pedras_salgadas_2cm', text: 'Granito Pedras Salgadas 2cm (€58,33/m²)'},
+                    {value: 'granito_preto_angola_2cm', text: 'Granito Preto Angola 2cm (€150/m²)'},
+                    {value: 'granito_preto_zimbabue_2cm', text: 'Granito Preto Zimbabue 2cm (€233,33/m²)'},
+                    {value: 'marmore_branco_ibiza_2cm', text: 'Mármore Branco Ibiza 2cm (€150/m²)'}
+                ],
+                '3cm': [
+                    {value: 'granito_vila_real_3cm', text: 'Granito Vila Real 3cm (€75/m²)'},
+                    {value: 'granito_pedras_salgadas_3cm', text: 'Granito Pedras Salgadas 3cm (€75/m²)'},
+                    {value: 'granito_preto_angola_3cm', text: 'Granito Preto Angola 3cm (€183,33/m²)'},
+                    {value: 'granito_preto_zimbabue_3cm', text: 'Granito Preto Zimbabue 3cm (€300/m²)'},
+                    {value: 'marmore_branco_ibiza_3cm', text: 'Mármore Branco Ibiza 3cm (€216,67/m²)'}
+                ],
+                'outro': [
+                    {value: 'pedra_hijau_1cm', text: 'Pedra Hijau 1cm (€66,67/m²)'}
+                ]
+            };
+            
+            // Adicionar opções baseado na espessura selecionada
+            if (materiais[espessuraSelected]) {
+                materiais[espessuraSelected].forEach(material => {
+                    const option = document.createElement('option');
+                    option.value = material.value;
+                    option.textContent = material.text;
+                    materialSelect.appendChild(option);
+                });
+                materialGroup.style.display = 'block';
+            } else {
+                materialGroup.style.display = 'none';
             }
         }
 

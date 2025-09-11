@@ -28,7 +28,8 @@ def family_display_name(family_name):
         'revestimento': 'Revestimento',
         'aquecimento': 'Aquecimento',
         'construcao': 'Construção da Piscina',
-        'construcao_laje': 'Construção da Laje'
+        'construcao_laje': 'Construção da Laje',
+        'bordadura': 'Bordadura'
     }
     return family_display_names.get(family_name, family_name.title())
 
@@ -299,7 +300,13 @@ def generate_budget():
             'laje_m2': float(data.get('laje_m2', 0)) if data.get('laje_m2') else 0,
             'laje_espessura': float(data.get('laje_espessura', 0)) if data.get('laje_espessura') else 0,
             'revestimento_laje': data.get('revestimento_laje'),
-            'material_revestimento': data.get('material_revestimento')
+            'material_revestimento': data.get('material_revestimento'),
+            # BORDADURA
+            'havera_bordadura': data.get('havera_bordadura'),
+            'tipo_bordadura': data.get('tipo_bordadura'),
+            'espessura_bordadura': data.get('espessura_bordadura'),
+            'material_bordadura_natural': data.get('material_bordadura_natural'),
+            'serie_bordadura_ceramico': data.get('serie_bordadura_ceramico')
         }
         
         print(f"DEBUG: Answers processadas: {answers}")
@@ -948,7 +955,13 @@ def get_current_answers():
                 'laje_m2': pool_info.get('laje_m2', 0),
                 'laje_espessura': pool_info.get('laje_espessura', 0),
                 'revestimento_laje': pool_info.get('revestimento_laje', 'nao'),
-                'material_revestimento': pool_info.get('material_revestimento', '')
+                'material_revestimento': pool_info.get('material_revestimento', ''),
+                # Bordadura
+                'havera_bordadura': pool_info.get('havera_bordadura', 'nao'),
+                'tipo_bordadura': pool_info.get('tipo_bordadura', ''),
+                'espessura_bordadura': pool_info.get('espessura_bordadura', ''),
+                'material_bordadura_natural': pool_info.get('material_bordadura_natural', ''),
+                'serie_bordadura_ceramico': pool_info.get('serie_bordadura_ceramico', '')
             }
         
         return jsonify({
@@ -1064,7 +1077,8 @@ def update_project_configuration():
             'tipo_cobertura_laminas', 'casa_maquinas_abaixo', 'casa_maquinas_desc', 
             'tipo_luzes', 'zona_praia', 'zona_praia_largura', 'zona_praia_comprimento',
             'escadas', 'escadas_largura', 'havera_laje', 'laje_m2', 'laje_espessura',
-            'revestimento_laje', 'material_revestimento'
+            'revestimento_laje', 'material_revestimento', 'havera_bordadura', 'tipo_bordadura',
+            'espessura_bordadura', 'material_bordadura_natural', 'serie_bordadura_ceramico'
         ]
         
         for f in fields:
